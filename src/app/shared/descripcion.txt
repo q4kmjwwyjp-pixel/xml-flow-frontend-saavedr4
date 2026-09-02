@@ -1,0 +1,1 @@
+Agregar en esta carpeta componentes reutilizables como la navbar, los mensajes de error, etc.

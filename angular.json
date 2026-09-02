@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "xmlflow-frontend": {
+    "XmlFlow": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -26,7 +26,15 @@
             ],
             "styles": [
               "src/styles.css"
-            ]
+            ],
+            "server": "src/main.server.ts",
+            "outputMode": "server",
+            "security": {
+              "allowedHosts": []
+            },
+            "ssr": {
+              "entry": "src/server.ts"
+            }
           },
           "configurations": {
             "production": {
@@ -56,10 +64,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "xmlflow-frontend:build:production"
+              "buildTarget": "XmlFlow:build:production"
             },
             "development": {
-              "buildTarget": "xmlflow-frontend:build:development"
+              "buildTarget": "XmlFlow:build:development"
             }
           },
           "defaultConfiguration": "development"
