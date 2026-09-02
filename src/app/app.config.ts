@@ -7,6 +7,5 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(), // <- necesario para que AuthService pueda llamar al backend
   ],
 };

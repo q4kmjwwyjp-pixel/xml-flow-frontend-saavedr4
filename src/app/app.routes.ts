@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -14,7 +13,6 @@ export const routes: Routes = [
   // Persona 3.
   {
     path: 'dashboard',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/dashboard-placeholder/dashboard-placeholder.component').then(
         (m) => m.DashboardPlaceholderComponent,
@@ -24,7 +22,6 @@ export const routes: Routes = [
   // Interfaz 4 — Alerta de validación exitosa (Persona 5)
   {
     path: 'validacion-exitosa',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/alertas/alerta-exito/alerta-exito.component').then((m) => m.AlertaExitoComponent),
   },
@@ -32,7 +29,6 @@ export const routes: Routes = [
   // Interfaz 3 — Alerta de rechazo (Persona 5)
   {
     path: 'alerta-rechazo',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/alertas/alerta-rechazo/alerta-rechazo.component').then((m) => m.AlertaRechazoComponent),
   },

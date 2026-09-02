@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { CfdiValidationService } from '../../core/services/cfdi-validation.service';
 import { LogoXmlFlowComponent } from '../../shared/components/logo-xml-flow/logo-xml-flow.component';
+import { CfdiValidationService } from '../../core/services/cfdi-validation.service';
 
 /**
  * Placeholder TEMPORAL de la Interfaz 1 (Dashboard de operaciones).
@@ -21,7 +21,7 @@ import { LogoXmlFlowComponent } from '../../shared/components/logo-xml-flow/logo
   imports: [CommonModule, LogoXmlFlowComponent],
   template: `
     <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;font-family:'Segoe UI',system-ui,sans-serif;background:#f5f8ff;">
-      <app-logo-xml-flow [size]="48"></app-logo-xml-flow>
+      <app-logo-xml-flow></app-logo-xml-flow>
       <h1 style="color:#0f2247;margin:0;">Dashboard de operaciones (placeholder)</h1>
       <p style="color:#6b7280;max-width:420px;text-align:center;margin:0;">
         Aquí va la Interfaz 1 real de Persona 3. Mientras tanto, usa estos botones para
@@ -55,7 +55,6 @@ export class DashboardPlaceholderComponent {
   }
 
   cerrarSesion(): void {
-    this.authService.logout();
     this.router.navigateByUrl('/login');
   }
 }

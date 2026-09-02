@@ -1,79 +1,47 @@
-import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { API_URL } from '../../core/config/api.config';
+// login.component.ts
+import { Component } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LogoXmlFlowComponent } from '../../shared/components/logo-xml-flow/logo-xml-flow.component';
 
-type EstadoLogin = 'inicial' | 'cargando' | 'error' | 'exito';
-
-/**
- * Interfaz de Login (rol Administrador)
- * --------------------------------------
- * Responsabilidad de Persona 5. El endpoint real de autenticación todavía
- * no existe (lo entrega Backend), así que este componente:
- *   1) Valida en el cliente que correo/RFC y contraseña no estén vacíos.
- *   2) Llama a AuthService.login(), que simula la petición HTTP.
- *   3) Refleja 3 estados visuales: cargando, error y éxito simulado.
- *   4) Al autenticar, navega a /dashboard (Interfaz 1, Persona 3).
- */
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, LogoXmlFlowComponent],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
-  private readonly fb = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
+  loginForm: FormGroup;
 
-  readonly estado = signal<EstadoLogin>('inicial');
-  readonly mensajeError = signal<string>('');
-  readonly mostrarPassword = signal(false);
-  readonly apiUrl = API_URL;
-
-  readonly form = this.fb.nonNullable.group({
-    usuario: ['', [Validators.required]],
-    password: ['', [Validators.required]],
-  });
-
-  get usuarioInvalido(): boolean {
-    const c = this.form.controls.usuario;
-    return c.invalid && (c.dirty || c.touched);
+  constructor(
+    private fb: FormBuilder, 
+    private authService: AuthService
+  ) {
+    // Inicializamos el formulario con validaciones básicas
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required]]
+    });
   }
 
-  get passwordInvalido(): boolean {
-    const c = this.form.controls.password;
-    return c.invalid && (c.dirty || c.touched);
-  }
-
-  togglePassword(): void {
-    this.mostrarPassword.update((v) => !v);
-  }
-
-  enviar(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+  onSubmit() {
+    // Si el formulario es inválido, detenemos la ejecución
+    if (this.loginForm.invalid) {
+      console.log('Faltan datos o son incorrectos');
       return;
     }
 
-    this.estado.set('cargando');
-    this.mensajeError.set('');
+    // Extraemos los datos validados
+    const { email, password } = this.loginForm.value;
 
-    this.authService.login(this.form.getRawValue()).subscribe({
-      next: () => {
-        this.estado.set('exito');
-        // Pequeña pausa para que el usuario alcance a ver la confirmación
-        // antes de redirigir al Dashboard de operaciones (Interfaz 1).
-        setTimeout(() => this.router.navigateByUrl('/dashboard'), 900);
+    this.authService.login(email, password).subscribe({
+      next: (response) => {
+        console.log('Login exitoso:', response);
       },
-      error: (err) => {
-        this.estado.set('error');
-        this.mensajeError.set(err?.mensaje ?? 'No se pudo iniciar sesión. Intenta de nuevo.');
-      },
+      error: (error) => {
+        console.error('Error al iniciar sesión:', error);
+      }
     });
   }
 }
