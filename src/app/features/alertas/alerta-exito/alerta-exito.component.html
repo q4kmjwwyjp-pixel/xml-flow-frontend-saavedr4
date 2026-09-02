@@ -1,0 +1,38 @@
+<div class="alert-page alert-page--success">
+  <div class="alert-card">
+    <div class="alert-card__header">
+      <app-logo-xml-flow [size]="32" [compact]="true"></app-logo-xml-flow>
+      <span class="alert-card__badge alert-card__badge--success">CFDI validado</span>
+    </div>
+
+    <div class="alert-card__icon alert-card__icon--success">✓</div>
+
+    <h1 class="alert-card__title">Comprobante validado correctamente</h1>
+    <p class="alert-card__subtitle" *ngIf="resultado() as r">
+      Folio <strong>{{ r.serie ? r.serie + '-' : '' }}{{ r.folio || r.uuid }}</strong> — {{ r.proveedor.nombre }}
+    </p>
+
+    <div class="alert-card__summary" *ngIf="resultado() as r">
+      <div><span>RFC proveedor</span><strong>{{ r.proveedor.rfc }}</strong></div>
+      <div><span>Régimen del receptor</span><strong>{{ r.regimenReceptor }}</strong></div>
+      <div><span>Uso de CFDI</span><strong>{{ r.usoCfdi }}</strong></div>
+      <div><span>Método / forma de pago</span><strong>{{ r.metodoPago }}{{ r.formaPago ? ' · ' + r.formaPago : '' }}</strong></div>
+      <div><span>Total</span><strong>{{ r.total | currency: 'MXN' }}</strong></div>
+      <div><span>Condiciones de crédito</span><strong>{{ r.condicionesPago || (r.diasCredito + ' días') }}</strong></div>
+      <div *ngIf="r.fechaEstimadaPago"><span>Fecha estimada de pago</span><strong>{{ r.fechaEstimadaPago }}</strong></div>
+      <div><span>Fecha de emisión</span><strong>{{ r.fechaEmision }}</strong></div>
+    </div>
+
+    <div class="alert-card__empty" *ngIf="!resultado()">
+      No hay un resultado de validación cargado todavía. Sube un CFDI desde la Pantalla de carga para ver el resumen
+      aquí.
+    </div>
+
+    <div class="alert-card__actions">
+      <button class="alert-card__btn alert-card__btn--primary" (click)="irADashboard()">
+        Ir al tablero de pagos
+      </button>
+      <button class="alert-card__btn alert-card__btn--ghost" (click)="cargarOtroXml()">Cargar otro CFDI</button>
+    </div>
+  </div>
+</div>
