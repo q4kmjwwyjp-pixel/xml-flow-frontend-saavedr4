@@ -1,0 +1,63 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-card__brand">
+      <app-logo-xml-flow [size]="48"></app-logo-xml-flow>
+    </div>
+
+    <h1 class="login-card__title">Iniciar sesión</h1>
+    <p class="login-card__subtitle">Accede con tu cuenta institucional de Administrador</p>
+
+    <form [formGroup]="form" (ngSubmit)="enviar()" class="login-form" novalidate>
+      <div class="login-form__field">
+        <label for="usuario">Correo o RFC institucional</label>
+        <input
+          id="usuario"
+          type="text"
+          formControlName="usuario"
+          placeholder="admin@empresa.com"
+          [class.is-invalid]="usuarioInvalido"
+          autocomplete="username"
+        />
+        <span class="login-form__error" *ngIf="usuarioInvalido"> Este campo es obligatorio. </span>
+      </div>
+
+      <div class="login-form__field">
+        <label for="password">Contraseña</label>
+        <div class="login-form__password-wrapper">
+          <input
+            id="password"
+            [type]="mostrarPassword() ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="••••••••"
+            [class.is-invalid]="passwordInvalido"
+            autocomplete="current-password"
+          />
+          <button type="button" class="login-form__toggle" (click)="togglePassword()">
+            {{ mostrarPassword() ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        <span class="login-form__error" *ngIf="passwordInvalido"> Este campo es obligatorio. </span>
+      </div>
+
+      <div class="login-form__banner login-form__banner--error" *ngIf="estado() === 'error'">
+        {{ mensajeError() }}
+      </div>
+
+      <div class="login-form__banner login-form__banner--success" *ngIf="estado() === 'exito'">
+        Autenticación exitosa. Redirigiendo...
+      </div>
+
+      <button type="submit" class="login-form__submit" [disabled]="estado() === 'cargando' || estado() === 'exito'">
+        <span *ngIf="estado() !== 'cargando'">Ingresar</span>
+        <span *ngIf="estado() === 'cargando'" class="login-form__spinner-wrapper">
+          <span class="login-form__spinner"></span> Verificando...
+        </span>
+      </button>
+    </form>
+
+    <p class="login-card__hint">
+      Nota (fase de desarrollo): este formulario llama a <code>POST {{ apiUrl }}/auth</code> en el backend real. Si
+      el backend no está corriendo, verás el estado de error de "no se pudo contactar al servidor".
+    </p>
+  </div>
+</div>

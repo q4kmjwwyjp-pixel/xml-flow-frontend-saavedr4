@@ -1,0 +1,59 @@
+<div class="alert-page alert-page--error">
+  <div class="alert-card">
+    <div class="alert-card__header">
+      <app-logo-xml-flow [size]="32" [compact]="true"></app-logo-xml-flow>
+      <span class="alert-card__badge alert-card__badge--error">CFDI rechazado</span>
+    </div>
+
+    <div class="alert-card__icon alert-card__icon--error">✕</div>
+
+    <h1 class="alert-card__title">No fue posible validar este comprobante</h1>
+    <p class="alert-card__subtitle" *ngIf="resultado() as r">
+      Folio <strong>{{ r.serie ? r.serie + '-' : '' }}{{ r.folio || r.uuid }}</strong> — {{ r.proveedor.nombre }}
+    </p>
+
+    <div class="alert-card__summary" *ngIf="resultado() as r">
+      <div><span>RFC proveedor</span><strong>{{ r.proveedor.rfc }}</strong></div>
+      <div><span>Régimen del receptor</span><strong>{{ r.regimenReceptor }}</strong></div>
+      <div><span>Uso de CFDI</span><strong>{{ r.usoCfdi }}</strong></div>
+      <div><span>Total</span><strong>{{ r.total | currency: 'MXN' }}</strong></div>
+      <div><span>Fecha de emisión</span><strong>{{ r.fechaEmision }}</strong></div>
+    </div>
+
+    <div class="alert-card__errores" *ngIf="resultado() as r">
+      <h2>Diagnóstico fiscal detallado</h2>
+
+      <!-- Si Backend implementa el desglose por campo (erroresDetalle) se muestra aquí -->
+      <ul *ngIf="r.erroresDetalle?.length">
+        <li *ngFor="let err of r.erroresDetalle">
+          <span class="alert-card__errores-campo">{{ err.campo }}</span>
+          <p>{{ err.descripcion }}</p>
+          <div class="alert-card__errores-valores" *ngIf="err.valorEncontrado || err.valorEsperado">
+            <span *ngIf="err.valorEncontrado">Encontrado: <strong>{{ err.valorEncontrado }}</strong></span>
+            <span *ngIf="err.valorEsperado">Esperado: <strong>{{ err.valorEsperado }}</strong></span>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Fallback: hoy el esquema sólo guarda motivoRechazo como texto único -->
+      <ul *ngIf="!r.erroresDetalle?.length && r.motivoRechazo">
+        <li>
+          <span class="alert-card__errores-campo">Motivo del rechazo</span>
+          <p>{{ r.motivoRechazo }}</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="alert-card__empty" *ngIf="!resultado()">
+      No hay un resultado de validación cargado todavía. Sube un CFDI desde la Pantalla de carga para ver el
+      diagnóstico aquí.
+    </div>
+
+    <div class="alert-card__actions">
+      <button class="alert-card__btn alert-card__btn--primary" (click)="reintentarCarga()">
+        Corregir y volver a cargar
+      </button>
+      <button class="alert-card__btn alert-card__btn--ghost" (click)="irADashboard()">Volver al dashboard</button>
+    </div>
+  </div>
+</div>
