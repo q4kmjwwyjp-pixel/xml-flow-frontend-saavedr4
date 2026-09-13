@@ -19,6 +19,10 @@ export const routes: Routes = [
     component: AlertaRechazoComponent,
   },
   {
+    path: 'validacion-exitosa',
+    component: AlertaExitoComponent
+  },
+  {
     path: 'exito',
     redirectTo: 'validacion-exitosa',
     pathMatch: 'full',
