@@ -22,7 +22,7 @@ export class UploadPage {
   cargando = signal<boolean>(false);
   mensajeError = signal<string | null>(null);
 
-  private readonly apiUrl = 'http://localhost:3000/xml/upload';
+  private readonly apiUrl = 'https://xml-flow-back-end.onrender.com/xml/upload';
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();
