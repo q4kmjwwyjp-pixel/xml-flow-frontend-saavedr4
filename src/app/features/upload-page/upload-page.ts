@@ -17,6 +17,10 @@ export class UploadPage {
   private readonly cfdiService = inject(CfdiValidationService);
   private readonly router = inject(Router)
 
+  regresar() {
+    this.router.navigateByUrl('/dashboard'); // Navega a la pantalla anterior
+  }
+
   archivoSeleccionado = signal<File | null>(null);
   estaArrastrando = signal<boolean>(false);
   cargando = signal<boolean>(false);

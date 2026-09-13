@@ -1,9 +1,5 @@
 // 1. Estados posibles de la factura (El semáforo)
-export type EstadoFactura = 
-  | 'PROGRAMADA'
-  | 'PROGRAMADA A PAGO'
-  | 'CON OBSERVACIONES'
-  | 'RECHAZADA';
+export type EstadoFactura = 'PROGRAMADA' | 'RECHAZADA' | 'PAGADA';
 
 // 2. Revisiones fiscales detalladas
 export interface ChecksFiscales {
@@ -48,13 +44,7 @@ export type Factura = FacturaResumen;
 // 4. Métricas de las 4 tarjetas superiores del Dashboard
 export interface MetricasDashboard {
   totalRevisadas: number;
-  totalProgramadas: number;         // <-- Requerido por tu dashboard
-  totalRechazadas: number;          // <-- Requerido por tu dashboard
-  pagosProgramadosHoy: number;      // <-- Requerido por tu dashboard
-  montoProgramadoPago: number;      // <-- Requerido por tu dashboard
-  totalFacturas?: number;
-  programadasPago?: number;
-  conObservaciones?: number;
-  rechazadas?: number;
-  montoTotalProgramado?: number;
+  totalProgramadas: number;
+  pagosProgramadosHoy: number;
+  montoProgramadoPago: number;
 }
