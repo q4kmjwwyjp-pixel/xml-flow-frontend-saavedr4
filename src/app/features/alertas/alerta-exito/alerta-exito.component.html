@@ -13,14 +13,20 @@
     </p>
 
     <div class="alert-card__summary" *ngIf="resultado() as r">
-      <div><span>RFC proveedor</span><strong>{{ r.proveedor.rfc }}</strong></div>
+      <div><span>RFC proveedor</span><strong>{{ r.proveedor?.rfc }}</strong></div>
       <div><span>Régimen del receptor</span><strong>{{ r.regimenReceptor }}</strong></div>
       <div><span>Uso de CFDI</span><strong>{{ r.usoCfdi }}</strong></div>
       <div><span>Método / forma de pago</span><strong>{{ r.metodoPago }}{{ r.formaPago ? ' · ' + r.formaPago : '' }}</strong></div>
       <div><span>Total</span><strong>{{ r.total | currency: 'MXN' }}</strong></div>
       <div><span>Condiciones de crédito</span><strong>{{ r.condicionesPago || (r.diasCredito + ' días') }}</strong></div>
-      <div *ngIf="r.fechaEstimadaPago"><span>Fecha estimada de pago</span><strong>{{ r.fechaEstimadaPago }}</strong></div>
-      <div><span>Fecha de emisión</span><strong>{{ r.fechaEmision }}</strong></div>
+      <!-- Fecha de emisión -->
+      <div><span>Fecha de emisión</span><strong>{{ r.fechaEmision | date: 'dd/MM/yyyy HH:mm' }}</strong></div>
+
+      <!-- Fecha estimada de pago -->
+      <div *ngIf="r.fechaEstimadaPago">
+        <span>Fecha estimada de pago</span>
+        <strong>{{ r.fechaEstimadaPago | date: 'dd/MM/yyyy HH:mm' }}</strong>
+      </div>
     </div>
 
     <div class="alert-card__empty" *ngIf="!resultado()">
@@ -30,9 +36,11 @@
 
     <div class="alert-card__actions">
       <button class="alert-card__btn alert-card__btn--primary" (click)="irADashboard()">
-        Ir al tablero de pagos
+        Regresar a dashboard
       </button>
-      <button class="alert-card__btn alert-card__btn--ghost" (click)="cargarOtroXml()">Cargar otro CFDI</button>
+      <button class="alert-card__btn alert-card__btn--ghost" (click)="cargarOtroXml()">
+        Cargar otro CFDI
+      </button>
     </div>
   </div>
 </div>

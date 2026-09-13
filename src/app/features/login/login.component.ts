@@ -1,5 +1,5 @@
 // login.component.ts
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -14,6 +14,8 @@ import { Router, RouterLink } from '@angular/router';
 })
 export class LoginComponent {
   loginForm: FormGroup;
+
+  private readonly router = inject(Router)
 
   constructor(
     private fb: FormBuilder, 
@@ -36,7 +38,7 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: (response) => {
         console.log('Login exitoso:', response);
-        
+        this.router.navigateByUrl('/dashboard')
       },
       error: (error) => {
         console.error('Error al iniciar sesión:', error);

@@ -1,1 +1,63 @@
-<p>upload-page works!</p>
+<div class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
+    
+    <!-- Logo idéntico al de Login -->
+    <div class="flex justify-center mb-2 -mt-5">
+      <app-logo-xml-flow></app-logo-xml-flow>
+    </div>
+
+    <h2 class="text-3xl font-bold text-center text-slate-900 mb-8">
+      Cargar Factura XML
+    </h2>
+
+    <!-- Zona Drag and Drop -->
+    <div 
+      class="w-full border-2 border-dashed rounded-xl p-6 text-center transition-all duration-150 mb-6"
+      [ngClass]="estaArrastrando() ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)">
+      
+      <svg class="w-10 h-10 stroke-slate-400 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+
+      @if (archivoSeleccionado()) {
+        <p class="text-sm font-semibold text-slate-800 break-all mb-1">
+          {{ archivoSeleccionado()?.name }}
+        </p>
+        <button type="button" class="text-xs text-red-500 font-medium hover:underline cursor-pointer" (click)="limpiarArchivo()">
+          Cambiar archivo
+        </button>
+      } @else {
+        <p class="text-sm text-slate-500 mb-1">Arrastra tu archivo XML aquí o</p>
+        <label for="fileInput" class="text-sm font-semibold text-blue-600 hover:text-blue-700 cursor-pointer">
+          Explorar archivos
+        </label>
+        <input id="fileInput" type="file" accept=".xml, application/xml, text/xml" class="hidden" (change)="onFileSelected($event)" />
+      }
+    </div>
+
+    <!-- Alerta de Error -->
+    @if (mensajeError()) {
+      <div class="p-3 mb-6 bg-red-50 text-red-700 text-xs rounded-lg text-center border border-red-100">
+        {{ mensajeError() }}
+      </div>
+    }
+
+    <!-- Botón de Envío estilo Login -->
+    <button 
+      type="button" 
+      [disabled]="!archivoSeleccionado() || cargando()"
+      (click)="enviarArchivo()"
+      class="w-full flex justify-center py-3.5 px-5 border border-transparent rounded-lg shadow-sm text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150">
+      {{ cargando() ? 'Validando...' : 'Enviar XML' }}
+    </button>
+
+    <!-- Footer estilo Login -->
+    <div class="text-center text-sm text-slate-500 mt-7 pt-6 border-t -mb-2 border-slate-100">
+      XmlFlow © 2026
+    </div>
+
+  </div>
+</div>
