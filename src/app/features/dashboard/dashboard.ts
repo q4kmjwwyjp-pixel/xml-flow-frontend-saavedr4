@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
+
 
 @Component({
   imports: [],
@@ -6,4 +8,11 @@ import { Component } from '@angular/core';
   styleUrl: './dashboard.css',
   templateUrl: './dashboard.html',
 })
-export class Dashboard {}
+export class Dashboard {
+  private readonly router = inject(Router)
+
+
+  goUploadePage() {
+    this.router.navigateByUrl('/upload')
+  }
+}

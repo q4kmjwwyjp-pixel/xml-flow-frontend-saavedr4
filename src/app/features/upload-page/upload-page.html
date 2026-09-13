@@ -34,7 +34,7 @@
         <label for="fileInput" class="text-sm font-semibold text-blue-600 hover:text-blue-700 cursor-pointer">
           Explorar archivos
         </label>
-        <input id="fileInput" type="file" accept=".xml" class="hidden" (change)="onFileSelected($event)" />
+        <input id="fileInput" type="file" accept=".xml, application/xml, text/xml" class="hidden" (change)="onFileSelected($event)" />
       }
     </div>
 
