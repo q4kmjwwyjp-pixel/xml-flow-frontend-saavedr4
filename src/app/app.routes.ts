@@ -3,6 +3,7 @@ import { LoginComponent } from './features/login/login.component';
 import { AlertaExitoComponent } from './features/alertas/alerta-exito/alerta-exito.component';
 import { AlertaRechazoComponent } from './features/alertas/alerta-rechazo/alerta-rechazo.component';
 import { UploadPage } from './features/upload-page/upload-page';
+import { Dashboard } from './features/dashboard/dashboard';
 
 export const routes: Routes = [
   {
@@ -32,7 +33,11 @@ export const routes: Routes = [
     component: UploadPage
   },
   {
-  path: "carga",
-  component: UploadPage
+    path: "carga",
+    component: UploadPage
+  },
+  {
+    path: "dashboard",
+    component: Dashboard
   }
 ];

@@ -44,7 +44,7 @@ export interface CfdiValidationResult {
   regimenReceptor: string;
   condicionesPago?: string | null;
   diasCredito: number;
-  estadoValidacion: 'Aprobada' | 'Rechazada' | 'Pendiente' | string;
+  estadoValidacion: 'Validada' | 'Aprobada' | 'Rechazada' | 'Pendiente' | string;
   motivoRechazo?: string | null;
   proveedor: ProveedorInfo;
   /** Viene de PagoProgramado.fechaEstimadaPago cuando la factura fue aprobada */
@@ -53,6 +53,6 @@ export interface CfdiValidationResult {
   erroresDetalle?: DiagnosticoFiscal[];
 }
 
-export function esFacturaAprobada(resultado: CfdiValidationResult): boolean {
-  return (resultado.estadoValidacion ?? '').trim().toLowerCase() === 'aprobada';
+export function esFacturaAprobada(json: CfdiValidationResult): boolean {
+  return json.estadoValidacion === 'Aprobada' || json.estadoValidacion === 'Validada';
 }
