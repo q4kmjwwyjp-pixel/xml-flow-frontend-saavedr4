@@ -2,8 +2,8 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './features/login/login.component';
 import { AlertaExitoComponent } from './features/alertas/alerta-exito/alerta-exito.component';
 import { AlertaRechazoComponent } from './features/alertas/alerta-rechazo/alerta-rechazo.component';
-import { UploadPage } from './features/upload-page/upload-page';
 import { Dashboard } from './features/dashboard/dashboard';
+import { UploadPage } from './features/upload-page/upload-page';
 
 export const routes: Routes = [
   {
@@ -11,8 +11,8 @@ export const routes: Routes = [
     component: LoginComponent
   },
   {
-    path: 'validacion-exitosa',
-    component: AlertaExitoComponent,
+    path: "rechazo",
+    component: AlertaRechazoComponent
   },
   {
     path: 'alerta-rechazo',

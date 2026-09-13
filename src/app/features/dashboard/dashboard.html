@@ -1,2 +1,313 @@
-<p>dashboard works!</p>
-<button class="border-2 border-red-300" (click)="goUploadePage()">go upload</button>
+<div class="dashboard-wrapper">
+  <!-- Encabezado -->
+  <header class="dashboard-header">
+    <div class="header-info">
+      <h1>Dashboard de Operaciones y Pagos</h1>
+      <p class="subtitle">
+        Revisión Fiscal CFDI 4.0 | Empresa Receptora: <strong>Transportes de los santos e hijos (TSH7311116TL4)</strong>
+      </p>
+    </div>
+    
+    <!-- Botones de Acción y Navegación -->
+    <div class="header-actions">
+      <button class="btn btn-reporte" (click)="abrirReporteSemanal()">
+        📋 Reporte Semanal de Pagos
+      </button>
+      <a routerLink="/exito" class="btn btn-outline success">
+        ✓ Alertas de Éxito
+      </a>
+      <a routerLink="/rechazo" class="btn btn-outline danger">
+        ⚠ Alertas de Rechazo
+      </a>
+      <a routerLink="/" class="btn btn-secondary">
+        Cerrar Sesión
+      </a>
+    </div>
+  </header>
+
+  <!-- Tarjetas de Métricas -->
+  <section class="metrics-grid" *ngIf="metricas">
+    <div class="metric-card total">
+      <span class="metric-title">Facturas Revisadas</span>
+      <span class="metric-value">{{ metricas.totalRevisadas }}</span>
+      <span class="metric-sub">XMLs analizados</span>
+    </div>
+    
+    <div class="metric-card success">
+      <span class="metric-title">Programadas a Pago</span>
+      <span class="metric-value">{{ metricas.totalProgramadas }}</span>
+      <span class="metric-sub">Datos fiscales válidos</span>
+    </div>
+
+    <div class="metric-card danger">
+      <span class="metric-title">Rechazadas</span>
+      <span class="metric-value">{{ metricas.totalRechazadas }}</span>
+      <span class="metric-sub">Con discrepancias fiscales</span>
+    </div>
+
+    <div class="metric-card alert">
+      <span class="metric-title">Pagos Programados para Hoy</span>
+      <span class="metric-value">{{ metricas.pagosProgramadosHoy }}</span>
+      <span class="metric-sub">Atención a transferencias</span>
+    </div>
+
+    <div class="metric-card info">
+      <span class="metric-title">Monto Total Programado</span>
+      <span class="metric-value">{{ metricas.montoProgramadoPago | currency:'MXN':'symbol':'1.2-2' }}</span>
+      <span class="metric-sub">Flujo de salida aprobado</span>
+    </div>
+  </section>
+
+  <!-- Barra de Filtros y Calendario de Pagos -->
+  <section class="filter-panel">
+    <div class="filter-group">
+      <!-- Buscador -->
+      <div class="input-container">
+        <label for="buscar">Buscar Proveedor / XML</label>
+        <input 
+          id="buscar"
+          type="text" 
+          [(ngModel)]="busquedaTexto" 
+          (input)="aplicarFiltros()"
+          placeholder="Código (PRV-), RFC o Razón Social..." 
+          class="form-control"
+        />
+      </div>
+
+      <!-- Calendario: Fecha Programada de Pago -->
+      <div class="input-container calendar-filter">
+        <label for="programacion">
+          📅 Fecha Programada de Pago (Revisión + Crédito)
+        </label>
+        <div class="date-input-wrapper">
+          <input 
+            id="programacion"
+            type="date" 
+            [(ngModel)]="fechaFiltroProgramacion" 
+            (change)="aplicarFiltros()"
+            class="form-control date-control"
+          />
+          <button 
+            *ngIf="fechaFiltroProgramacion" 
+            (click)="limpiarFiltroFecha()" 
+            class="btn-clear" 
+            title="Limpiar filtro de fecha">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtro por Estado -->
+      <div class="input-container">
+        <label for="estado">Estado de Revisión</label>
+        <select 
+          id="estado"
+          [(ngModel)]="filtroEstado" 
+          (change)="aplicarFiltros()" 
+          class="form-control">
+          <option value="TODAS">Todos los resultados</option>
+          <option value="PROGRAMADA">Programadas a Pago</option>
+          <option value="RECHAZADA">Rechazadas</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="filter-results-info">
+      Mostrando <strong>{{ facturasFiltradas.length }}</strong> de {{ todasLasFacturas.length }} comprobantes
+      <span *ngIf="fechaFiltroProgramacion" class="active-filter-badge">
+        Programadas para el: {{ fechaFiltroProgramacion }}
+      </span>
+    </div>
+  </section>
+
+  <!-- Tabla de Facturas Recientes -->
+  <section class="table-section">
+    <div class="table-header">
+      <h2>XMLs Recientemente Revisados y Programaciones</h2>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Código</th>
+            <th>Proveedor / Razón Social</th>
+            <th>Condición</th>
+            <th>Crédito</th>
+            <th>Fecha Pago Programada</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of facturasFiltradas">
+            <td class="cell-folio"><strong>{{ f.folio }}</strong></td>
+            <td><span class="badge-code">{{ f.codigoProveedor }}</span></td>
+            <td>
+              <div class="provider-info">
+                <span class="provider-name">{{ f.nombreProveedor }}</span>
+                <span class="provider-rfc">RFC Emisor: {{ f.rfcEmisor }}</span>
+              </div>
+            </td>
+            <td>
+              <!-- Solo Crédito o Contado -->
+              <span class="badge-method" [ngClass]="f.metodoPago.toLowerCase()">
+                {{ f.metodoPago === 'PUE' ? 'Contado' : 'Crédito' }}
+              </span>
+            </td>
+            <td>{{ f.diasCredito }} días nat.</td>
+            <td>
+              <div class="due-date-info">
+                <strong>{{ f.fechaProgramacionPago }}</strong>
+                <span *ngIf="esPagoHoy(f.fechaProgramacionPago) && f.estado === 'PROGRAMADA'" class="badge-tag warning">
+                  ¡Pagar hoy!
+                </span>
+              </div>
+            </td>
+            <td class="cell-amount">{{ f.total | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td>
+              <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
+                {{ f.estado === 'PROGRAMADA' ? 'PROGRAMADA A PAGO' : 'RECHAZADA' }}
+              </span>
+            </td>
+            <td>
+              <button (click)="verDetalleXml(f)" class="btn-detail">
+                Ver Auditoría
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="facturasFiltradas.length === 0">
+            <td colspan="9" class="empty-state">
+              No se encontraron comprobantes que coincidan con los filtros aplicados.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Modal 1: Detalle de Validación Fiscal del Comprobante -->
+  <div class="modal-backdrop" *ngIf="facturaSeleccionada" (click)="cerrarDetalle()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Auditoría Fiscal: {{ facturaSeleccionada.folio }}</h3>
+        <button class="btn-close" (click)="cerrarDetalle()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-row">
+          <span class="label">Proveedor:</span>
+          <span class="val">{{ facturaSeleccionada.codigoProveedor }} - {{ facturaSeleccionada.nombreProveedor }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">RFC Emisor:</span>
+          <span class="val">{{ facturaSeleccionada.rfcEmisor }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Fecha Recepción XML:</span>
+          <span class="val">{{ facturaSeleccionada.fechaRevision }}</span>
+        </div>
+        <!-- Aquí se indica claramente si fue PUE o PPD -->
+        <div class="detail-row">
+  <span class="label">Método de pago:</span>
+  <span class="val">
+    <strong>{{ facturaSeleccionada.metodoPago }}</strong> 
+    {{ facturaSeleccionada.metodoPago === 'PPD' ? '(Pago en Parcialidades o Diferido)' : '(Pago en Una Sola Exhibición)' }}
+  </span>
+</div>
+        <div class="detail-row">
+          <span class="label">Condición de Pago:</span>
+          <span class="val">
+            {{ facturaSeleccionada.metodoPago === 'PPD' ? 'Crédito (' + facturaSeleccionada.diasCredito + ' días naturales)' : 'Contado (0 días)' }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Fecha Programada de Pago:</span>
+          <span class="val highlight">{{ facturaSeleccionada.fechaProgramacionPago }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Monto a Pagar:</span>
+          <span class="val highlight">{{ facturaSeleccionada.total | currency:'MXN':'symbol':'1.2-2' }}</span>
+        </div>
+
+        <!-- Checklist de Comprobaciones Fiscales -->
+        <h4 class="section-subtitle">Comprobaciones Fiscales del CFDI:</h4>
+        <div class="checks-list">
+          <!-- Régimen Fiscal -->
+        <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.regimenValido">
+          {{ facturaSeleccionada.checksFiscales.regimenValido ? '✓' : 'X' }} Régimen Fiscal: 624 (Coordinados)
+        </div>
+
+        <!-- Uso de CFDI -->
+        <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.usoCfdiValido">
+          {{ facturaSeleccionada.checksFiscales.usoCfdiValido ? '✓' : 'X' }} Uso de CFDI: G03 (Gastos en general)
+        </div>
+
+        <!-- Método de Pago (PPD o PUE) -->
+        <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.metodoPagoValido">
+          {{ facturaSeleccionada.checksFiscales.metodoPagoValido ? '✓' : 'X' }} 
+          Método de pago: {{ facturaSeleccionada.metodoPago }} 
+          ({{ facturaSeleccionada.metodoPago === 'PPD' ? 'Pago en Parcialidades / Crédito' : 'Pago en una Exhibición / Contado' }})
+        </div>
+
+        <!-- Forma de Pago (03 o 99) -->
+        <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.formaPagoValida">
+          {{ facturaSeleccionada.checksFiscales.formaPagoValida ? '✓' : 'X' }} 
+          Forma de pago: {{ facturaSeleccionada.formaPago === '99' ? '99 (Por definir - Válido en Crédito)' : '03 (Transferencia electrónica)' }}
+        </div>
+        </div>
+
+        <!-- Motivo de rechazo en caso de fallar -->
+        <div *ngIf="facturaSeleccionada.motivoRechazo" class="error-box">
+          <strong>Motivo de Rechazo:</strong>
+          <p>{{ facturaSeleccionada.motivoRechazo }}</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Reporte Semanal de Facturas Programadas a Pago -->
+  <div class="modal-backdrop" *ngIf="mostrarReporteSemanal" (click)="cerrarReporteSemanal()">
+    <div class="modal-card wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Reporte Semanal: Facturas Programadas para Pago</h3>
+        <button class="btn-close" (click)="cerrarReporteSemanal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="report-desc">
+          Listado de facturas aprobadas con datos fiscales validados para la empresa <strong>Transportes de los santos e hijos</strong>.
+        </p>
+
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Cód. Proveedor</th>
+              <th>Nombre de Proveedor</th>
+              <th>Días Crédito</th>
+              <th>Monto Total</th>
+              <th>Fecha Programada de Pago</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of facturasParaReporte">
+              <td><strong>{{ item.codigoProveedor }}</strong></td>
+              <td>{{ item.nombreProveedor }}</td>
+              <td>{{ item.diasCredito }} días</td>
+              <td><strong>{{ item.total | currency:'MXN':'symbol':'1.2-2' }}</strong></td>
+              <td><span class="report-date">{{ item.fechaProgramacionPago }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline success" (click)="imprimirReporte()">🖨 Imprimir / Guardar PDF</button>
+        <button class="btn btn-secondary" (click)="cerrarReporteSemanal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
