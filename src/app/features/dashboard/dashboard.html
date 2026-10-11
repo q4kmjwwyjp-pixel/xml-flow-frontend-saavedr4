@@ -6,7 +6,8 @@
       <p class="subtitle">
         Revisión Fiscal CFDI 4.0 | Empresa Receptora: <strong>Transportes de los santos e hijos (TSH7311116TL4)</strong>
       </p>
-      <button class="border-2 mt-2 hover:bg-blue-200 hover:border-white border-blue-300 rounded-md px-4 py-2" (click)="goUploadPage()">Escanear XML</button>
+      <button class="border-2 mt-2 hover:bg-blue-200 hover:border-white border-blue-300 rounded-md px-4 py-2"
+        (click)="goUploadPage()">Escanear XML</button>
     </div>
   </header>
 
@@ -20,7 +21,7 @@
     <section class="metrics-grid" *ngIf="metricas">
       <div class="metric-card total">
         <span class="metric-title">Facturas Analizadas</span>
-        <span class="metric-value">{{ metricas.totalRevisadas }}</span>      
+        <span class="metric-value">{{ metricas.totalRevisadas }}</span>
       </div>
       <div class="metric-card success">
         <span class="metric-title">Facturas a credito pendientes</span>
@@ -39,14 +40,8 @@
         <!-- Buscador -->
         <div class="input-container">
           <label for="buscar">Buscar Folio o Proveedor</label>
-          <input 
-            id="buscar"
-            type="text" 
-            [(ngModel)]="busquedaTexto" 
-            (input)="aplicarFiltros()"
-            placeholder="Folio o Proveedor" 
-            class="form-control"
-          />
+          <input id="buscar" type="text" [(ngModel)]="busquedaTexto" (input)="aplicarFiltros()"
+            placeholder="Folio o Proveedor" class="form-control" />
         </div>
 
         <!-- Calendario: Fecha Programada de Pago -->
@@ -55,31 +50,22 @@
             Fecha Programada de Pago (Crédito)
           </label>
           <div class="date-input-wrapper">
-            <input 
-              id="programacion"
-              type="date" 
-              [(ngModel)]="fechaFiltroProgramacion" 
-              (change)="aplicarFiltros()"
-              class="form-control date-control"
-            />
+            <input id="programacion" type="date" [(ngModel)]="fechaFiltroProgramacion" (change)="aplicarFiltros()"
+              class="form-control date-control" />
           </div>
         </div>
 
         <!-- Filtro por Estado -->
         <div class="input-container">
           <label for="condicion">Condición de Pago</label>
-          <select 
-            id="condicion"
-            [(ngModel)]="filtroCondicion" 
-            (change)="aplicarFiltros()" 
-            class="form-control">
+          <select id="condicion" [(ngModel)]="filtroCondicion" (change)="aplicarFiltros()" class="form-control">
             <option value="TODAS">Todas las condiciones</option>
             <option value="PUE">Contado (PUE)</option>
             <option value="PPD">Crédito (PPD)</option>
           </select>
         </div>
       </div>
-      
+
       <div class="filter-results-info">
         Mostrando <strong>{{ facturasFiltradas.length }}</strong> de {{ todasLasFacturas.length }} comprobantes
         <span *ngIf="fechaFiltroProgramacion" class="active-filter-badge">
@@ -92,6 +78,9 @@
     <section class="table-section">
       <div class="table-header">
         <h2>XMLs Recientemente Revisados y Programaciones</h2>
+        <button routerLink="/pagos-programados" class="btn btn-primary bg-blue-500 hover:bg-blue-600 text-white">
+          Ver todos los pagos programados
+        </button>
       </div>
 
       <div class="table-responsive">
@@ -127,7 +116,8 @@
               <td>
                 <div class="due-date-info">
                   <strong>{{ f.fechaProgramacionPago }}</strong>
-                  <span *ngIf="esPagoHoy(f.fechaProgramacionPago) && f.estado === 'PROGRAMADA'" class="badge-tag warning">
+                  <span *ngIf="esPagoHoy(f.fechaProgramacionPago) && f.estado === 'PROGRAMADA'"
+                    class="badge-tag warning">
                     ¡Pagar hoy!
                   </span>
                 </div>
@@ -135,9 +125,9 @@
               <td class="cell-amount">{{ f.total | currency:'MXN':'symbol':'1.2-2' }}</td>
               <td>
                 <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
-                  {{ 
-                    f.estado === 'PROGRAMADA' ? 'PAGO PROGRAMADO' : 
-                    (f.estado === 'PAGADA' ? 'PAGADA (CONTADO)' : 'RECHAZADA') 
+                  {{
+                  f.estado === 'PROGRAMADA' ? 'PAGO PROGRAMADO' :
+                  (f.estado === 'PAGADA' ? 'PAGADA (CONTADO)' : 'RECHAZADA')
                   }}
                 </span>
               </td>
@@ -168,7 +158,8 @@
         <div class="modal-body">
           <div class="detail-row">
             <span class="label">Proveedor:</span>
-            <span class="val">{{ facturaSeleccionada.codigoProveedor }} - {{ facturaSeleccionada.nombreProveedor }}</span>
+            <span class="val">{{ facturaSeleccionada.codigoProveedor }} - {{ facturaSeleccionada.nombreProveedor
+              }}</span>
           </div>
           <div class="detail-row">
             <span class="label">RFC Emisor:</span>
@@ -181,14 +172,16 @@
           <div class="detail-row">
             <span class="label">Método de pago:</span>
             <span class="val">
-              <strong>{{ facturaSeleccionada.metodoPago }}</strong> 
-              {{ facturaSeleccionada.metodoPago === 'PPD' ? '(Pago en Parcialidades o Diferido)' : '(Pago en Una Sola Exhibición)' }}
+              <strong>{{ facturaSeleccionada.metodoPago }}</strong>
+              {{ facturaSeleccionada.metodoPago === 'PPD' ? '(Pago en Parcialidades o Diferido)' : '(Pago en Una Sola
+              Exhibición)' }}
             </span>
           </div>
           <div class="detail-row">
             <span class="label">Condición de Pago:</span>
             <span class="val">
-              {{ facturaSeleccionada.metodoPago === 'PPD' ? 'Crédito (' + facturaSeleccionada.diasCredito + ' días naturales)' : 'Contado (0 días)' }}
+              {{ facturaSeleccionada.metodoPago === 'PPD' ? 'Crédito (' + facturaSeleccionada.diasCredito + ' días
+              naturales)' : 'Contado (0 días)' }}
             </span>
           </div>
           <div class="detail-row">
@@ -210,9 +203,10 @@
               {{ facturaSeleccionada.checksFiscales.usoCfdiValido ? '✓' : 'X' }} Uso de CFDI: G03 (Gastos en general)
             </div>
             <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.metodoPagoValido">
-              {{ facturaSeleccionada.checksFiscales.metodoPagoValido ? '✓' : 'X' }} 
-              Método de pago: {{ facturaSeleccionada.metodoPago }} 
-              ({{ facturaSeleccionada.metodoPago === 'PPD' ? 'Pago en Parcialidades / Crédito' : 'Pago en una Exhibición / Contado' }})
+              {{ facturaSeleccionada.checksFiscales.metodoPagoValido ? '✓' : 'X' }}
+              Método de pago: {{ facturaSeleccionada.metodoPago }}
+              ({{ facturaSeleccionada.metodoPago === 'PPD' ? 'Pago en Parcialidades / Crédito' : 'Pago en una Exhibición
+              / Contado' }})
             </div>
           </div>
 

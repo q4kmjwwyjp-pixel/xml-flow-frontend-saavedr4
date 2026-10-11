@@ -1,0 +1,169 @@
+<section class="table-section">
+    <button routerLink="/dashboard" class=" bg-blue-500 hover:bg-blue-600 text-white btn  px-4 py-2 rounded">
+        ← Regresar al Dashboard
+    </button>
+    <div class="table-header">
+        <h2>Tablero de Pagos Programados</h2>
+        <div class="header-actions" style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+            <div class="sort-container">
+                <label style="margin-right: 10px; font-weight: bold; color: #333;">Ordenar por fecha:</label>
+                <select (change)="cambiarOrden($event)"
+                    style="padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc;">
+                    <option value="asc">Más antiguos primero</option>
+                    <option value="desc">Más recientes primero</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Proveedor</th>
+                    <th>Condición</th>
+                    <th>Crédito</th>
+                    <th>Fecha Pago Programada</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (f of facturasFiltradas; track f.folio) {
+                <tr>
+                    <td class="cell-folio"><strong>{{ f.folio }}</strong></td>
+                    <td>
+                        <div class="provider-info">
+                            <span class="provider-name">{{ f.nombreProveedor }}</span>
+                            <span class="provider-rfc">RFC Emisor: {{ f.rfcEmisor }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <!-- Solo Crédito o Contado -->
+                        <span class="badge-method" [class]="f.metodoPago.toLowerCase()">
+                            {{ f.metodoPago === 'PUE' ? 'Contado' : 'Crédito' }}
+                        </span>
+                    </td>
+                    <td>{{ f.diasCredito }} días nat.</td>
+                    <td>
+                        <div class="due-date-info">
+                            <strong>{{ f.fechaProgramacionPago }}</strong>
+                            @if (f.estado === 'PROGRAMADA') {
+                            <span class="badge-tag warning">
+                                ¡Pagar hoy!
+                            </span>
+                            }
+                        </div>
+                    </td>
+                    <td class="cell-amount">{{ (f.total || 0).toLocaleString('es-MX', { style: 'currency', currency:
+                        'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+                    <td>
+                        <span [class]="'status-badge ' + f.estado.toLowerCase()">
+                            {{
+                            f.estado === 'PROGRAMADA' ? 'PAGO PROGRAMADO' :
+                            (f.estado === 'PAGADA' ? 'PAGADA (CONTADO)' : 'RECHAZADA')
+                            }}
+                        </span>
+                    </td>
+                    <td>
+                        <button (click)="verDetalleXml(f)" class="btn-detail">
+                            Ver Auditoría
+                        </button>
+                    </td>
+                </tr>
+                }
+
+                @if (facturasFiltradas.length === 0) {
+                <tr>
+                    <td colspan="8" class="empty-state">
+                        No se encontraron comprobantes que coincidan con los filtros aplicados.
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Modal 1: Detalle de Validación Fiscal del Comprobante -->
+@if (facturaSeleccionada) {
+<div class="modal-backdrop" (click)="cerrarDetalle()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Auditoría Fiscal: {{ facturaSeleccionada.folio }}</h3>
+            <button class="btn-close" (click)="cerrarDetalle()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="detail-row">
+                <span class="label">Proveedor:</span>
+                <span class="val">{{ facturaSeleccionada.codigoProveedor }} - {{ facturaSeleccionada.nombreProveedor
+                    }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">RFC Emisor:</span>
+                <span class="val">{{ facturaSeleccionada.rfcEmisor }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Fecha Recepción XML:</span>
+                <span class="val">{{ facturaSeleccionada.fechaRevision }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Método de pago:</span>
+                <span class="val">
+                    <strong>{{ facturaSeleccionada.metodoPago }}</strong>
+                    {{ facturaSeleccionada.metodoPago === 'PPD' ? '(Pago en Parcialidades o Diferido)' : '(Pago en Una
+                    Sola Exhibición)' }}
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Condición de Pago:</span>
+                <span class="val">
+                    {{ facturaSeleccionada.metodoPago === 'PPD' ? 'Crédito (' + facturaSeleccionada.diasCredito + ' días
+                    naturales)' : 'Contado (0 días)' }}
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Fecha Programada de Pago:</span>
+                <span class="val highlight">{{ facturaSeleccionada.fechaProgramacionPago }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Monto a Pagar:</span>
+                <span class="val highlight">{{ (facturaSeleccionada.total || 0).toLocaleString('es-MX', { style:
+                    'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+
+            <!-- Checklist de Comprobaciones Fiscales -->
+            <h4 class="section-subtitle">Comprobaciones Fiscales del CFDI:</h4>
+            <div class="checks-list">
+                <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.regimenValido">
+                    {{ facturaSeleccionada.checksFiscales.regimenValido ? '✓' : 'X' }} Régimen Fiscal: 624 (Coordinados)
+                </div>
+                <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.usoCfdiValido">
+                    {{ facturaSeleccionada.checksFiscales.usoCfdiValido ? '✓' : 'X' }} Uso de CFDI: G03 (Gastos en
+                    general)
+                </div>
+                <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.metodoPagoValido">
+                    {{ facturaSeleccionada.checksFiscales.metodoPagoValido ? '✓' : 'X' }}
+                    Método de pago: {{ facturaSeleccionada.metodoPago }}
+                    ({{ facturaSeleccionada.metodoPago === 'PPD' ? 'Pago en Parcialidades / Crédito' : 'Pago en una
+                    Exhibición / Contado' }})
+                </div>
+            </div>
+
+            <!-- Motivo de rechazo en caso de fallar -->
+            @if (facturaSeleccionada.motivoRechazo) {
+            <div class="error-box">
+                <strong>Motivo de Rechazo:</strong>
+                <p>{{ facturaSeleccionada.motivoRechazo }}</p>
+            </div>
+            }
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+        </div>
+    </div>
+</div>
+}

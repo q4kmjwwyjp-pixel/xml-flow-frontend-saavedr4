@@ -4,8 +4,12 @@ import { AlertaExitoComponent } from './features/alertas/alerta-exito/alerta-exi
 import { AlertaRechazoComponent } from './features/alertas/alerta-rechazo/alerta-rechazo.component';
 import { Dashboard } from './features/dashboard/dashboard';
 import { UploadPage } from './features/upload-page/upload-page';
+import { PagosProgramados } from './features/pagos-programados/pagos-programados';
 
 export const routes: Routes = [
+  {
+    path: 'pagos-programados', component: PagosProgramados
+  },
   {
     path: "",
     component: LoginComponent

@@ -4,10 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { FacturaService } from '../../core/services/factura.service';
 import { FacturaResumen, MetricasDashboard } from '../../core/models/factura.model';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, FormsModule,],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -28,7 +29,7 @@ export class Dashboard implements OnInit {
   // Modales
   facturaSeleccionada: FacturaResumen | null = null;
 
-  constructor(private facturaService: FacturaService) {}
+  constructor(private facturaService: FacturaService) { }
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -40,14 +41,14 @@ export class Dashboard implements OnInit {
 
   cargarDatos(): void {
     this.cargando.set(true);
-    
+
     this.facturaService.getFacturas().subscribe({
       next: (data) => {
         try {
-          this.todasLasFacturas = data || []; 
+          this.todasLasFacturas = data || [];
           this.aplicarFiltros();
           this.calcularMetricas(this.todasLasFacturas);
-          this.cargando.set(false); 
+          this.cargando.set(false);
         } catch (error) {
           console.error('Error procesando datos:', error);
           this.cargando.set(false);
@@ -63,7 +64,7 @@ export class Dashboard implements OnInit {
   calcularMetricas(facturas: FacturaResumen[]): void {
     const hoy = new Date().toISOString().split('T')[0];
     const programadas = facturas.filter(f => f.estado === 'PROGRAMADA');
-    
+
     const pagosHoy = programadas.filter(f => f.fechaProgramacionPago === hoy).length;
     const montoTotal = programadas.reduce((sum, current) => sum + current.total, 0);
 
@@ -78,14 +79,14 @@ export class Dashboard implements OnInit {
   aplicarFiltros(): void {
     this.facturasFiltradas = this.todasLasFacturas.filter((factura) => {
       const coincideFecha = !this.fechaFiltroProgramacion || factura.fechaProgramacionPago === this.fechaFiltroProgramacion;
-      
+
       const busqueda = (this.busquedaTexto || '').toLowerCase();
       const coincideTexto = !busqueda ||
         (factura.codigoProveedor || '').toLowerCase().includes(busqueda) ||
         (factura.rfcEmisor || '').toLowerCase().includes(busqueda) ||
         (factura.nombreProveedor || '').toLowerCase().includes(busqueda) ||
         (factura.folio || '').toString().toLowerCase().includes(busqueda);
-        
+
       const coincideCondicion = this.filtroCondicion === 'TODAS' || factura.metodoPago === this.filtroCondicion;
 
       return coincideFecha && coincideTexto && coincideCondicion;
@@ -106,7 +107,7 @@ export class Dashboard implements OnInit {
   }
 
   esPagoHoy(fecha: string): boolean {
-    const hoy = new Date().toISOString().split('T')[0]; 
+    const hoy = new Date().toISOString().split('T')[0];
     return fecha === hoy;
   }
 }
