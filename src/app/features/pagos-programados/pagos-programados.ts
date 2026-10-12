@@ -1,10 +1,11 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { FacturaService } from '../../core/services/factura.service';
-import { calcularVencimiento } from '../../core/utils/factura-vencimiento';
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, CommonModule, FormsModule],
   selector: 'app-pagos-programados',
   styleUrl: './pagos-programados.css',
   templateUrl: './pagos-programados.html',
@@ -13,17 +14,22 @@ export class PagosProgramados implements OnInit {
   private facturaService = inject(FacturaService);
   private cdr = inject(ChangeDetectorRef);
 
+  todasLasFacturas: any[] = [];
   facturasFiltradas: any[] = [];
-
   facturaSeleccionada: any = null;
+
+  // Propiedades para los Filtros
+  busquedaTexto: string = '';
+  fechaFiltroProgramacion: string = '';
+  filtroCondicion: string = 'TODAS';
+  ordenSeleccionado: string = 'asc';
 
   ngOnInit() {
     this.facturaService.getFacturas().subscribe({
       next: (facturas) => {
-        this.facturasFiltradas = facturas;
-
-        this.ordenarLista('asc');
-
+        this.todasLasFacturas = facturas;
+        // Aplicamos los filtros y el orden desde el inicio
+        this.aplicarFiltros();
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -32,9 +38,30 @@ export class PagosProgramados implements OnInit {
     });
   }
 
+  // Función que restaura la lógica de filtros
+  aplicarFiltros() {
+    this.facturasFiltradas = this.todasLasFacturas.filter((f) => {
+      const coincideFecha = !this.fechaFiltroProgramacion || f.fechaProgramacionPago === this.fechaFiltroProgramacion;
+      
+      const busqueda = (this.busquedaTexto || '').toLowerCase();
+      const coincideTexto = !busqueda ||
+        (f.codigoProveedor || '').toLowerCase().includes(busqueda) ||
+        (f.rfcEmisor || '').toLowerCase().includes(busqueda) ||
+        (f.nombreProveedor || '').toLowerCase().includes(busqueda) ||
+        (f.folio || '').toString().toLowerCase().includes(busqueda);
+      
+      const coincideCondicion = this.filtroCondicion === 'TODAS' || f.metodoPago === this.filtroCondicion;
+
+      return coincideFecha && coincideTexto && coincideCondicion;
+    });
+
+    // Mantenemos el orden elegido por el usuario después de filtrar
+    this.ordenarLista(this.ordenSeleccionado);
+  }
+
   cambiarOrden(event: any) {
-    const orden = event.target.value;
-    this.ordenarLista(orden);
+    this.ordenSeleccionado = event.target.value;
+    this.ordenarLista(this.ordenSeleccionado);
   }
 
   private ordenarLista(orden: string) {
@@ -45,9 +72,10 @@ export class PagosProgramados implements OnInit {
     });
   }
 
-  /** true si la factura es a crédito y ya pasó su fecha límite de pago. */
-  esVencida(factura: any): boolean {
-    return calcularVencimiento(factura).vencida;
+  esPagoHoy(fecha: string): boolean {
+    if(!fecha) return false;
+    const hoy = new Date().toISOString().split('T')[0];
+    return fecha.startsWith(hoy);
   }
 
   verDetalleXml(factura: any) {

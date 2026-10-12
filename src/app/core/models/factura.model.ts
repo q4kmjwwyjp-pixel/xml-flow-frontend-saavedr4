@@ -1,11 +1,8 @@
-// 1. Estados posibles de la factura (El semáforo)
-export type EstadoFactura = 'PROGRAMADA' | 'RECHAZADA' | 'PAGADA';
 
-// 2. Revisiones fiscales detalladas
 export interface ChecksFiscales {
   rfcValido?: boolean;
   rfcReceptorValido?: boolean;
-  razonSocialValida?: boolean;      // <-- Requerido por tu HTML
+  razonSocialValida?: boolean;      
   regimenValido?: boolean;
   usoCfdiValido?: boolean;
   metodoTransferencia?: boolean;
@@ -14,9 +11,9 @@ export interface ChecksFiscales {
   proveedorEnBD?: boolean;
 }
 
-// 3. Estructura exacta de la Factura
 export interface FacturaResumen {
   id?: number | string;
+  estado: 'pendiente' | 'pagado' | 'vencido'
   folio: string;
   codigoProveedor: string;
   codigo?: string;
@@ -32,7 +29,6 @@ export interface FacturaResumen {
   metodoPago: string;               // <-- Sin '?' para que el HTML no marque 'possibly undefined'
   formaPago?: string;
   total: number;
-  estado: EstadoFactura;
   motivoRechazo?: string;
   observaciones?: string;
   checksFiscales: ChecksFiscales;

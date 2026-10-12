@@ -7,133 +7,7 @@
   color: #1e293b;
 }
 
-/* Encabezado y Botones de Navegación */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.dashboard-header h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin: 0;
-  color: #0f172a;
-}
-
-.dashboard-header .subtitle {
-  margin: 4px 0 0 0;
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* Botones */
-.btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.btn-outline.danger {
-  color: #dc2626;
-  border-color: #fca5a5;
-  background: #fef2f2;
-}
-
-.btn-outline.danger:hover {
-  background: #fee2e2;
-}
-
-.btn-secondary {
-  color: #475569;
-  border-color: #cbd5e1;
-  background: #ffffff;
-}
-
-.btn-secondary:hover {
-  background: #f1f5f9;
-}
-
-/* Grid de Métricas */
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.metric-card {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  border-left: 4px solid #94a3b8;
-}
-
-.metric-card.total {
-  border-left-color: #3b82f6;
-}
-
-.metric-card.success {
-  border-left-color: #22c55e;
-}
-
-.metric-card.danger {
-  border-left-color: #ef4444;
-}
-
-.metric-card.warning {
-  border-left-color: #f59e0b;
-}
-
-.metric-card.alert {
-  border-left-color: #8b5cf6;
-  background: #faf5ff;
-}
-
-.metric-card.info {
-  border-left-color: #06b6d4;
-}
-
-.metric-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-.metric-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 6px 0;
-}
-
-.metric-sub {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-/* Panel de Filtros y Calendario */
+/* Panel de Filtros y Calendario (Restaurado) */
 .filter-panel {
   background: #ffffff;
   border-radius: 8px;
@@ -187,20 +61,6 @@
   width: 100%;
 }
 
-.btn-clear {
-  position: absolute;
-  right: 10px;
-  background: transparent;
-  border: none;
-  font-size: 0.9rem;
-  color: #94a3b8;
-  cursor: pointer;
-}
-
-.btn-clear:hover {
-  color: #ef4444;
-}
-
 .filter-results-info {
   margin-top: 12px;
   font-size: 0.85rem;
@@ -217,6 +77,47 @@
   border-radius: 4px;
   font-weight: 600;
   font-size: 0.75rem;
+}
+
+/* Encabezado y Botones */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dashboard-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary {
+  color: #475569;
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
+.btn-secondary:hover {
+  background: #f1f5f9;
 }
 
 /* Tabla de Facturas Recientes */
@@ -315,6 +216,7 @@
   color: #b91c1c;
 }
 
+/* -- ESTADOS SINCRONIZADOS A BASE DE DATOS -- */
 .status-badge {
   display: inline-block;
   font-size: 0.75rem;
@@ -323,29 +225,19 @@
   border-radius: 12px;
 }
 
-.status-badge.programada {
+.status-badge.pendiente {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge.pagado {
   background: #dcfce7;
   color: #15803d;
 }
 
-.status-badge.pagada {
-  background: #e0f2fe;
-  color: #0284c7;
-}
-
-.status-badge.rechazada {
+.status-badge.vencido {
   background: #fee2e2;
   color: #b91c1c;
-}
-
-.status-badge.vencida {
-  background: #b91c1c;
-  color: #ffffff;
-}
-
-.status-badge.pendiente {
-  background: #fef3c7;
-  color: #b45309;
 }
 
 .cell-amount {
@@ -461,18 +353,6 @@
   border-top: 1px solid #e2e8f0;
 }
 
-/* Badge del Código de Proveedor */
-.badge-code {
-  background: #f1f5f9;
-  color: #334155;
-  font-weight: 700;
-  font-size: 0.78rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
-}
-
-/* Subtítulo de sección en modal */
 .section-subtitle {
   font-size: 0.95rem;
   font-weight: 700;
@@ -480,7 +360,6 @@
   color: #1e293b;
 }
 
-/* Checklist de Comprobaciones Fiscales */
 .checks-list {
   display: flex;
   flex-direction: column;
@@ -495,15 +374,12 @@
   font-size: 0.82rem;
   font-weight: 600;
   color: #dc2626;
-  /* Rojo si no cumple */
 }
 
 .check-item.pass {
   color: #16a34a;
-  /* Verde si cumple */
 }
 
-/* Caja de Error / Motivo de Rechazo */
 .error-box {
   background: #fef2f2;
   border-left: 4px solid #ef4444;

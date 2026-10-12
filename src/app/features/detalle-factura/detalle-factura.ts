@@ -30,6 +30,7 @@ export class DetalleFactura implements OnInit {
   cargando = signal(true);
   error = signal('');
   factura = signal<FacturaResumen | null>(null);
+  procesandoCambioEstado = signal(false); // Para deshabilitar botones mientras carga
 
   /** Estado de vencimiento calculado a partir de la fecha límite de pago. */
   vencimiento = computed(() => {
@@ -37,19 +38,26 @@ export class DetalleFactura implements OnInit {
     return f ? calcularVencimiento(f) : null;
   });
 
-  /** Etiqueta y clase CSS del estado; "VENCIDA" tiene prioridad sobre "PAGO PROGRAMADO". */
+  /** Etiqueta y clase CSS del estado. Adaptado al nuevo modelo: Pendiente, Pagado, Vencido */
   estadoVisual = computed(() => {
     const f = this.factura();
     if (!f) return { texto: '', clase: '' };
-    if (this.vencimiento()?.vencida) return { texto: 'VENCIDA', clase: 'vencida' };
-    if (f.estado === 'PROGRAMADA') return { texto: 'PAGO PROGRAMADO', clase: 'programada' };
-    if (f.estado === 'PAGADA') return { texto: 'PAGADA (CONTADO)', clase: 'pagada' };
-    return { texto: 'RECHAZADA', clase: 'rechazada' };
+    
+    // Leemos el estado directo de la base de datos (pasando a minúsculas para asegurar coincidencia)
+    const estadoDB = (f.estado || 'pendiente').toLowerCase();
+
+    if (estadoDB === 'pagado') return { texto: '🟢 PAGADO', clase: 'pagada' };
+    if (estadoDB === 'vencido') return { texto: '🔴 VENCIDA', clase: 'vencida' };
+    
+    // Si está pendiente, evaluamos si ya se pasó la fecha
+    if (this.vencimiento()?.vencida) return { texto: '🔴 VENCIDA (NO PAGADA)', clase: 'vencida' };
+    
+    return { texto: '🟡 PENDIENTE', clase: 'programada' };
   });
 
   esCredito = computed(() => this.factura()?.metodoPago === 'PPD');
 
-  /** Impuestos = total - subtotal (el backend no guarda el desglose de IVA por separado). */
+  /** Impuestos = total - subtotal */
   impuestos = computed(() => {
     const f = this.factura();
     return f && f.subTotal != null ? f.total - f.subTotal : null;
@@ -92,6 +100,54 @@ export class DetalleFactura implements OnInit {
         this.error.set('No se pudo cargar la factura. Verifica tu conexión o que la factura exista.');
         this.cargando.set(false);
       },
+    });
+  }
+
+  // --- NUEVAS FUNCIONES PARA MARCAR ESTADOS MANUAMENTE ---
+
+  marcarComoPagado() {
+    const f = this.factura();
+    if (!f || !f.uuid) return;
+    
+    const uuid = f.uuid; // <-- Guardamos en constante para que TypeScript sea feliz
+
+    // Confirmación simple nativa de navegador
+    if (!confirm(`¿Estás seguro de marcar la factura ${f.folio} como PAGADA?`)) return;
+
+    this.procesandoCambioEstado.set(true);
+    this.facturaService.marcarComoPagado(uuid).subscribe({ // <-- Usamos la constante
+      next: () => {
+        // Recargamos los datos para que el estado se actualice visualmente
+        this.cargar(uuid); // <-- Usamos la constante
+        this.procesandoCambioEstado.set(false);
+      },
+      error: (err) => {
+        console.error('Error al actualizar a Pagado:', err);
+        alert('Ocurrió un error al actualizar el estado de la factura.');
+        this.procesandoCambioEstado.set(false);
+      }
+    });
+  }
+
+  marcarComoVencido() {
+    const f = this.factura();
+    if (!f || !f.uuid) return;
+
+    const uuid = f.uuid; // <-- Guardamos en constante 
+
+    if (!confirm(`¿Estás seguro de marcar la factura ${f.folio} como VENCIDA?`)) return;
+
+    this.procesandoCambioEstado.set(true);
+    this.facturaService.marcarComoVencido(uuid).subscribe({ // <-- Usamos la constante
+      next: () => {
+        this.cargar(uuid); // <-- Usamos la constante
+        this.procesandoCambioEstado.set(false);
+      },
+      error: (err) => {
+        console.error('Error al actualizar a Vencido:', err);
+        alert('Ocurrió un error al actualizar el estado de la factura.');
+        this.procesandoCambioEstado.set(false);
+      }
     });
   }
 

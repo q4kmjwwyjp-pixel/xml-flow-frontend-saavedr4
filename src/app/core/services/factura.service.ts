@@ -8,32 +8,38 @@ import { FacturaResumen } from '../models/factura.model';
 })
 export class FacturaService {
   private http = inject(HttpClient);
-  private apiUrl = 'https://xml-flow-back-end.onrender.com'; // Cambiar a la URL de Render
+  private apiUrl = 'https://xml-flow-back-end.onrender.com';
 
   // 1. Obtener todas las facturas desde /xml
   getFacturas(): Observable<FacturaResumen[]> {
     return this.http.get<any>(`${this.apiUrl}/xml`).pipe(
       map(respuestaBackend => {
-        console.log('1. Respuesta cruda de Render:', respuestaBackend);
-
         const arregloFacturas = Array.isArray(respuestaBackend) 
           ? respuestaBackend 
           : (respuestaBackend.data || respuestaBackend.facturas || []);
 
-        // ESTE RETURN ES VITAL, si falta, el componente recibe 'undefined'
         return arregloFacturas.map((f: any) => this.mapearFacturaFront(f));
       })
     );
   }
 
-  // 2. Obtener una factura por UUID desde /xml/:uuid (pantalla de detalle)
+  // 2. Obtener una factura por UUID desde /xml/:uuid
   getFacturaPorUuid(uuid: string): Observable<FacturaResumen> {
     return this.http
       .get<any>(`${this.apiUrl}/xml/${encodeURIComponent(uuid)}`)
       .pipe(map(f => this.mapearFacturaFront(f)));
   }
 
-  // 3. Función de mapeo (igual a la anterior)
+  // --- NUEVOS MÉTODOS PARA ACTUALIZAR ESTADO EN EL BACKEND ---
+  marcarComoPagado(uuid: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/xml/${encodeURIComponent(uuid)}/pagado`, {});
+  }
+
+  marcarComoVencido(uuid: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/xml/${encodeURIComponent(uuid)}/vencido`, {});
+  }
+
+  // 3. Función de mapeo
   private mapearFacturaFront(f: any): FacturaResumen {
     return {
       uuid: f.uuid,
@@ -47,9 +53,12 @@ export class FacturaService {
       fechaProgramacionPago: f.fechaEstimadaPago ? f.fechaEstimadaPago.split('T')[0] : '',
       fechaRevision: f.createdAt ? f.createdAt.split('T')[0] : '',
       total: Number(f.total),
-      estado: (f.estadoValidacion === 'Validada' || f.estadoValidacion === 'Aprobada') 
-               ? (f.metodoPago === 'PUE' ? 'PAGADA' : 'PROGRAMADA') 
-               : 'RECHAZADA',
+      
+      // AQUÍ ESTÁ LA SOLUCIÓN:
+      // Ya no calculamos el estado. Simplemente tomamos el que viene del backend.
+      // Si por alguna razón viene vacío (en facturas viejas), le ponemos 'Pendiente' por defecto.
+      estado: f.estado || 'Pendiente',
+      
       motivoRechazo: f.motivoRechazo,
       fechaEmision: f.fechaEmision ? f.fechaEmision.split('T')[0] : '',
       subTotal: f.subTotal != null ? Number(f.subTotal) : undefined,

@@ -22,9 +22,29 @@
     <span [class]="'status-badge ' + estadoVisual().clase">{{ estadoVisual().texto }}</span>
   </header>
 
+  <!-- NUEVO: Panel de Acciones Manuales de Estado -->
+  <div class="actions-panel">
+    <span class="actions-label">Actualizar estado manualmente:</span>
+    <div class="buttons-group">
+      <button 
+        class="btn-action success" 
+        (click)="marcarComoPagado()" 
+        [disabled]="procesandoCambioEstado() || f.estado?.toLowerCase() === 'pagado'">
+        💰 Marcar como Pagada
+      </button>
+      
+      <button 
+        class="btn-action danger" 
+        (click)="marcarComoVencido()" 
+        [disabled]="procesandoCambioEstado() || f.estado?.toLowerCase() === 'vencido'">
+        ⚠️ Marcar como Vencida
+      </button>
+    </div>
+  </div>
+
   <!-- Aviso de factura vencida -->
   @if (vencimiento(); as v) {
-  @if (v.vencida) {
+  @if (v.vencida && f.estado?.toLowerCase() !== 'pagado') {
   <div class="alert-vencida" role="alert">
     <strong>Factura vencida.</strong>
     El plazo de crédito terminó el {{ f.fechaProgramacionPago }}
@@ -106,11 +126,13 @@
     </dl>
 
     @if (vencimiento(); as v) {
-    <div class="plazo" [class.vencido]="v.vencida">
-      @if (v.vencida) {
+    <div class="plazo" [class.vencido]="v.vencida && f.estado?.toLowerCase() !== 'pagado'">
+      @if (f.estado?.toLowerCase() === 'pagado') {
+      Factura saldada.
+      } @else if (v.vencida) {
       Vencida hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}
-      } @else if (f.estado === 'RECHAZADA') {
-      Factura rechazada: no genera pago programado
+      } @else if (f.estado?.toLowerCase() === 'vencido') {
+      Factura rechazada/vencida manualmente.
       } @else if (!esCredito()) {
       Pago de contado: sin plazo pendiente
       } @else if (v.diasRestantes === 0) {

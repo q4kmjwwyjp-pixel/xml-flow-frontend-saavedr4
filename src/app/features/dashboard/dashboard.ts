@@ -1,30 +1,24 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FacturaService } from '../../core/services/factura.service';
 import { FacturaResumen, MetricasDashboard } from '../../core/models/factura.model';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, FormsModule, RouterLink],
+  standalone: true,
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class Dashboard implements OnInit {
 
-  private readonly router = inject(Router)
+  private readonly router = inject(Router);
 
   cargando = signal(true);
   metricas: MetricasDashboard | null = null;
   todasLasFacturas: FacturaResumen[] = [];
-  facturasFiltradas: FacturaResumen[] = [];
-
-  // Filtros
-  fechaFiltroProgramacion: string = '';
-  busquedaTexto: string = '';
-  filtroCondicion: string = 'TODAS';
+  facturasRecientes: FacturaResumen[] = []; // Reemplaza a facturasFiltradas
 
   // Modales
   facturaSeleccionada: FacturaResumen | null = null;
@@ -36,7 +30,7 @@ export class Dashboard implements OnInit {
   }
 
   goUploadPage() {
-    this.router.navigateByUrl('/upload')
+    this.router.navigateByUrl('/upload');
   }
 
   cargarDatos(): void {
@@ -46,8 +40,8 @@ export class Dashboard implements OnInit {
       next: (data) => {
         try {
           this.todasLasFacturas = data || [];
-          this.aplicarFiltros();
-          this.calcularMetricas(this.todasLasFacturas);
+          this.filtrarUltimas24Horas();
+          this.calcularMetricas(this.facturasRecientes);
           this.cargando.set(false);
         } catch (error) {
           console.error('Error procesando datos:', error);
@@ -61,41 +55,32 @@ export class Dashboard implements OnInit {
     });
   }
 
-  calcularMetricas(facturas: FacturaResumen[]): void {
-    const hoy = new Date().toISOString().split('T')[0];
-    const programadas = facturas.filter(f => f.estado === 'PROGRAMADA');
+  filtrarUltimas24Horas(): void {
+    const hace24Horas = new Date();
+    hace24Horas.setHours(hace24Horas.getHours() - 24);
 
-    const pagosHoy = programadas.filter(f => f.fechaProgramacionPago === hoy).length;
-    const montoTotal = programadas.reduce((sum, current) => sum + current.total, 0);
-
-    this.metricas = {
-      totalRevisadas: facturas.length,
-      totalProgramadas: programadas.length,
-      pagosProgramadosHoy: pagosHoy,
-      montoProgramadoPago: montoTotal
-    };
-  }
-
-  aplicarFiltros(): void {
-    this.facturasFiltradas = this.todasLasFacturas.filter((factura) => {
-      const coincideFecha = !this.fechaFiltroProgramacion || factura.fechaProgramacionPago === this.fechaFiltroProgramacion;
-
-      const busqueda = (this.busquedaTexto || '').toLowerCase();
-      const coincideTexto = !busqueda ||
-        (factura.codigoProveedor || '').toLowerCase().includes(busqueda) ||
-        (factura.rfcEmisor || '').toLowerCase().includes(busqueda) ||
-        (factura.nombreProveedor || '').toLowerCase().includes(busqueda) ||
-        (factura.folio || '').toString().toLowerCase().includes(busqueda);
-
-      const coincideCondicion = this.filtroCondicion === 'TODAS' || factura.metodoPago === this.filtroCondicion;
-
-      return coincideFecha && coincideTexto && coincideCondicion;
+    this.facturasRecientes = this.todasLasFacturas.filter((factura) => {
+      // NOTA: Usa 'createdAt' si Prisma lo genera, o 'fechaRevision' según venga mapeado de tu backend
+      const fechaEscaneo = new Date((factura as any).createdAt || factura.fechaRevision || new Date());
+      return fechaEscaneo >= hace24Horas;
     });
   }
 
-  limpiarFiltroFecha(): void {
-    this.fechaFiltroProgramacion = '';
-    this.aplicarFiltros();
+  calcularMetricas(facturas: FacturaResumen[]): void {
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    // Ahora filtramos basándonos en el nuevo estado "Pendiente"
+    const pendientes = facturas.filter(f => f.estado === 'pendiente');
+
+    const pagosHoy = pendientes.filter(f => f.fechaProgramacionPago && f.fechaProgramacionPago.startsWith(hoy)).length;
+    const montoTotal = pendientes.reduce((sum, current) => sum + current.total, 0);
+
+    this.metricas = {
+      totalRevisadas: facturas.length,
+      totalProgramadas: pendientes.length, // Reutilizamos tu propiedad del modelo para no romper tu interface
+      pagosProgramadosHoy: pagosHoy,
+      montoProgramadoPago: montoTotal
+    };
   }
 
   verDetalleXml(factura: FacturaResumen): void {
@@ -107,7 +92,8 @@ export class Dashboard implements OnInit {
   }
 
   esPagoHoy(fecha: string): boolean {
+    if(!fecha) return false;
     const hoy = new Date().toISOString().split('T')[0];
-    return fecha === hoy;
+    return fecha.startsWith(hoy);
   }
 }

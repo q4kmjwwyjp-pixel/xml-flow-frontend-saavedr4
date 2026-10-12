@@ -26,7 +26,7 @@ export function calcularVencimiento(
   hoy: Date = new Date(),
 ): InfoVencimiento {
   const limite = aFechaLocal(f.fechaProgramacionPago);
-  if (f.metodoPago !== 'PPD' || f.estado === 'RECHAZADA' || !limite) {
+  if (f.metodoPago !== 'PPD' || f.estado === 'vencido' || !limite) {
     return { vencida: false, diasVencida: 0, diasRestantes: 0 };
   }
   const hoy0 = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
