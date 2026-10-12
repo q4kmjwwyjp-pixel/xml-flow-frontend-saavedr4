@@ -26,9 +26,17 @@ export class FacturaService {
     );
   }
 
-  // 2. Función de mapeo (igual a la anterior)
+  // 2. Obtener una factura por UUID desde /xml/:uuid (pantalla de detalle)
+  getFacturaPorUuid(uuid: string): Observable<FacturaResumen> {
+    return this.http
+      .get<any>(`${this.apiUrl}/xml/${encodeURIComponent(uuid)}`)
+      .pipe(map(f => this.mapearFacturaFront(f)));
+  }
+
+  // 3. Función de mapeo (igual a la anterior)
   private mapearFacturaFront(f: any): FacturaResumen {
     return {
+      uuid: f.uuid,
       folio: f.serie ? `${f.serie}-${f.folio}` : (f.folio || f.uuid),
       codigoProveedor: `PRV-${f.proveedor?.id || '000'}`, 
       nombreProveedor: f.proveedor?.nombre || 'Proveedor Desconocido',
@@ -43,6 +51,12 @@ export class FacturaService {
                ? (f.metodoPago === 'PUE' ? 'PAGADA' : 'PROGRAMADA') 
                : 'RECHAZADA',
       motivoRechazo: f.motivoRechazo,
+      fechaEmision: f.fechaEmision ? f.fechaEmision.split('T')[0] : '',
+      subTotal: f.subTotal != null ? Number(f.subTotal) : undefined,
+      usoCfdi: f.usoCfdi,
+      regimenReceptor: f.regimenReceptor,
+      regimenEmisor: f.proveedor?.regimenFiscal,
+      condicionesPago: f.condicionesPago ?? undefined,
       checksFiscales: {
         regimenValido: f.regimenReceptor === '624',
         usoCfdiValido: f.usoCfdi === 'G03',

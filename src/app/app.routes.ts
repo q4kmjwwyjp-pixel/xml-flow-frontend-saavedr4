@@ -5,10 +5,14 @@ import { AlertaRechazoComponent } from './features/alertas/alerta-rechazo/alerta
 import { Dashboard } from './features/dashboard/dashboard';
 import { UploadPage } from './features/upload-page/upload-page';
 import { PagosProgramados } from './features/pagos-programados/pagos-programados';
+import { DetalleFactura } from './features/detalle-factura/detalle-factura';
 
 export const routes: Routes = [
   {
     path: 'pagos-programados', component: PagosProgramados
+  },
+  {
+    path: 'pagos-programados/:uuid', component: DetalleFactura
   },
   {
     path: "",
