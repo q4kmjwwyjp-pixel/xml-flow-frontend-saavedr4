@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FacturaService } from '../../core/services/factura.service';
+import { calcularVencimiento } from '../../core/utils/factura-vencimiento';
 
 @Component({
   imports: [RouterLink],
@@ -42,6 +43,11 @@ export class PagosProgramados implements OnInit {
       const fechaB = b.fechaProgramacionPago ? new Date(b.fechaProgramacionPago).getTime() : 0;
       return orden === 'asc' ? fechaA - fechaB : fechaB - fechaA;
     });
+  }
+
+  /** true si la factura es a crédito y ya pasó su fecha límite de pago. */
+  esVencida(factura: any): boolean {
+    return calcularVencimiento(factura).vencida;
   }
 
   verDetalleXml(factura: any) {

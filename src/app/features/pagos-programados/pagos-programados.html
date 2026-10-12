@@ -51,7 +51,11 @@
                     <td>
                         <div class="due-date-info">
                             <strong>{{ f.fechaProgramacionPago }}</strong>
-                            @if (f.estado === 'PROGRAMADA') {
+                            @if (esVencida(f)) {
+                            <span class="badge-tag danger">
+                                Vencida
+                            </span>
+                            } @else if (f.estado === 'PROGRAMADA') {
                             <span class="badge-tag warning">
                                 ¡Pagar hoy!
                             </span>
@@ -61,16 +65,17 @@
                     <td class="cell-amount">{{ (f.total || 0).toLocaleString('es-MX', { style: 'currency', currency:
                         'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
                     <td>
-                        <span [class]="'status-badge ' + f.estado.toLowerCase()">
+                        <span [class]="'status-badge ' + (esVencida(f) ? 'vencida' : f.estado.toLowerCase())">
                             {{
+                            esVencida(f) ? 'VENCIDA' :
                             f.estado === 'PROGRAMADA' ? 'PAGO PROGRAMADO' :
                             (f.estado === 'PAGADA' ? 'PAGADA (CONTADO)' : 'RECHAZADA')
                             }}
                         </span>
                     </td>
                     <td>
-                        <button (click)="verDetalleXml(f)" class="btn-detail">
-                            Ver Auditoría
+                        <button [routerLink]="['/pagos-programados', f.uuid]" class="btn-detail">
+                            Ver detalle
                         </button>
                     </td>
                 </tr>

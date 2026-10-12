@@ -36,6 +36,15 @@ export interface FacturaResumen {
   motivoRechazo?: string;
   observaciones?: string;
   checksFiscales: ChecksFiscales;
+
+  // --- Campos extra para la pantalla de detalle (opcionales) ---
+  uuid?: string;
+  fechaEmision?: string;
+  subTotal?: number;
+  usoCfdi?: string;
+  regimenReceptor?: string;
+  regimenEmisor?: string;
+  condicionesPago?: string;
 }
 
 // Alias para usar cualquiera de los dos nombres

@@ -1,0 +1,125 @@
+<section class="detalle-page">
+  <button routerLink="/pagos-programados" class="btn-back">← Volver a Pagos Programados</button>
+
+  @if (cargando()) {
+  <div class="state-box">
+    <h2>Cargando factura...</h2>
+    <p>Conectando con el servidor, por favor espera.</p>
+  </div>
+  } @else if (error()) {
+  <div class="state-box error">
+    <h2>Ocurrió un problema</h2>
+    <p>{{ error() }}</p>
+  </div>
+  } @else if (factura(); as f) {
+
+  <!-- Encabezado -->
+  <header class="detalle-header">
+    <div>
+      <h1>Factura {{ f.folio }}</h1>
+      <p class="subtitle">{{ f.nombreProveedor }} · RFC {{ f.rfcEmisor }}</p>
+    </div>
+    <span [class]="'status-badge ' + estadoVisual().clase">{{ estadoVisual().texto }}</span>
+  </header>
+
+  <!-- Aviso de factura vencida -->
+  @if (vencimiento(); as v) {
+  @if (v.vencida) {
+  <div class="alert-vencida" role="alert">
+    <strong>Factura vencida.</strong>
+    El plazo de crédito terminó el {{ f.fechaProgramacionPago }}
+    (hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}). Programa el pago a la brevedad.
+  </div>
+  }
+  }
+
+  <!-- 1. Detalle de la factura -->
+  <div class="card">
+    <h2 class="card-title">Detalle de la factura</h2>
+    <div class="total-box">
+      <span class="total-label">Monto total</span>
+      <span class="total-value">{{ moneda(f.total) }}</span>
+    </div>
+    <dl class="info-grid">
+      <div class="info-item"><dt>Folio</dt><dd>{{ f.folio }}</dd></div>
+      <div class="info-item"><dt>UUID (folio fiscal)</dt><dd class="mono">{{ f.uuid || '—' }}</dd></div>
+      <div class="info-item"><dt>Proveedor</dt><dd>{{ f.codigoProveedor }} - {{ f.nombreProveedor }}</dd></div>
+      <div class="info-item"><dt>RFC emisor</dt><dd>{{ f.rfcEmisor }}</dd></div>
+      <div class="info-item"><dt>Fecha de emisión</dt><dd>{{ f.fechaEmision || '—' }}</dd></div>
+      <div class="info-item"><dt>Fecha de recepción del XML</dt><dd>{{ f.fechaRevision || '—' }}</dd></div>
+    </dl>
+  </div>
+
+  <!-- 2. Desglose de información fiscal -->
+  <div class="card">
+    <h2 class="card-title">Desglose de información fiscal</h2>
+
+    <div class="amounts">
+      <div class="amount-row"><span>Subtotal</span><span>{{ f.subTotal != null ? moneda(f.subTotal) : '—' }}</span></div>
+      <div class="amount-row">
+        <span>Impuestos (total − subtotal)</span>
+        <span>{{ impuestos() != null ? moneda(impuestos()) : '—' }}</span>
+      </div>
+      <div class="amount-row total"><span>Total</span><span>{{ moneda(f.total) }}</span></div>
+    </div>
+
+    <dl class="info-grid">
+      <div class="info-item"><dt>Régimen fiscal del emisor</dt><dd>{{ regimen(f.regimenEmisor) }}</dd></div>
+      <div class="info-item"><dt>Régimen fiscal del receptor</dt><dd>{{ regimen(f.regimenReceptor) }}</dd></div>
+      <div class="info-item"><dt>Uso de CFDI</dt><dd>{{ uso(f.usoCfdi) }}</dd></div>
+    </dl>
+
+    <h3 class="section-subtitle">Comprobaciones fiscales del CFDI</h3>
+    <ul class="checks-list">
+      @for (c of checks(); track c.etiqueta) {
+      <li class="check-item" [class.pass]="c.ok">
+        <span class="check-icon">{{ c.ok ? '✓' : '✕' }}</span>
+        <span><strong>{{ c.etiqueta }}:</strong> {{ c.valor }}</span>
+      </li>
+      }
+    </ul>
+
+    @if (f.motivoRechazo) {
+    <div class="error-box">
+      <strong>Motivo de rechazo:</strong>
+      <p>{{ f.motivoRechazo }}</p>
+    </div>
+    }
+  </div>
+
+  <!-- 3. Condiciones comerciales -->
+  <div class="card">
+    <h2 class="card-title">Condiciones comerciales</h2>
+    <dl class="info-grid">
+      <div class="info-item"><dt>Condición de pago</dt><dd>{{ esCredito() ? 'Crédito' : 'Contado' }}</dd></div>
+      <div class="info-item"><dt>Método de pago</dt><dd>{{ metodo(f.metodoPago) }}</dd></div>
+      <div class="info-item"><dt>Forma de pago</dt><dd>{{ forma(f.formaPago) }}</dd></div>
+      <div class="info-item">
+        <dt>Plazo de crédito</dt>
+        <dd>{{ esCredito() ? (f.diasCredito || 0) + ' días naturales' : 'Sin crédito (0 días)' }}</dd>
+      </div>
+      <div class="info-item"><dt>Condiciones indicadas en el XML</dt><dd>{{ f.condicionesPago || '—' }}</dd></div>
+      <div class="info-item">
+        <dt>Fecha límite de pago</dt>
+        <dd [class.text-danger]="vencimiento()?.vencida">{{ f.fechaProgramacionPago || '—' }}</dd>
+      </div>
+    </dl>
+
+    @if (vencimiento(); as v) {
+    <div class="plazo" [class.vencido]="v.vencida">
+      @if (v.vencida) {
+      Vencida hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}
+      } @else if (f.estado === 'RECHAZADA') {
+      Factura rechazada: no genera pago programado
+      } @else if (!esCredito()) {
+      Pago de contado: sin plazo pendiente
+      } @else if (v.diasRestantes === 0) {
+      Vence hoy
+      } @else {
+      Vence en {{ v.diasRestantes }} {{ v.diasRestantes === 1 ? 'día' : 'días' }}
+      }
+    </div>
+    }
+  </div>
+  }
+</section>

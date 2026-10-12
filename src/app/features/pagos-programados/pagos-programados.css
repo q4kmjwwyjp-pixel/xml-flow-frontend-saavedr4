@@ -338,6 +338,11 @@
   color: #b91c1c;
 }
 
+.status-badge.vencida {
+  background: #b91c1c;
+  color: #ffffff;
+}
+
 .status-badge.pendiente {
   background: #fef3c7;
   color: #b45309;
