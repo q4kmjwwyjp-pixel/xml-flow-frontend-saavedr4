@@ -6,8 +6,14 @@
       <p class="subtitle">
         Revisión Fiscal CFDI 4.0 | Empresa Receptora: <strong>Transportes de los santos e hijos (TSH7311116TL4)</strong>
       </p>
-      <button class="border-2 mt-2 hover:bg-blue-200 hover:border-white border-blue-300 rounded-md px-4 py-2"
-        (click)="goUploadPage()">Escanear XML 📄</button>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+        <button class="border-2 hover:bg-blue-200 hover:border-white border-blue-300 rounded-md px-4 py-2 font-semibold"
+          (click)="goUploadPage()">Escanear XML 📄</button>
+        <button routerLink="/reportes-semanales"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 shadow-sm">
+          📊 Generador de Reportes Semanales
+        </button>
+      </div>
     </div>
   </header>
 

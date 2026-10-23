@@ -30,6 +30,38 @@ export class FacturaService {
       .pipe(map(f => this.mapearFacturaFront(f)));
   }
 
+  // 2.1 Obtener reporte semanal y concentrado contable desde /xml/reporte/semanal
+  getReporteSemanal(params?: {
+    fechaInicio?: string;
+    fechaFin?: string;
+    criterio?: 'pago' | 'emision' | 'recepcion';
+    estado?: string;
+    metodoPago?: string;
+  }): Observable<{
+    resumen: any;
+    concentradoProveedores: any[];
+    facturas: FacturaResumen[];
+  }> {
+    const queryParams: Record<string, string> = {};
+    if (params?.fechaInicio) queryParams['fechaInicio'] = params.fechaInicio;
+    if (params?.fechaFin) queryParams['fechaFin'] = params.fechaFin;
+    if (params?.criterio) queryParams['criterio'] = params.criterio;
+    if (params?.estado) queryParams['estado'] = params.estado;
+    if (params?.metodoPago) queryParams['metodoPago'] = params.metodoPago;
+
+    return this.http
+      .get<any>(`${this.apiUrl}/xml/reporte/semanal`, { params: queryParams })
+      .pipe(
+        map((resp) => ({
+          resumen: resp?.resumen || null,
+          concentradoProveedores: resp?.concentradoProveedores || [],
+          facturas: Array.isArray(resp?.facturas)
+            ? resp.facturas.map((f: any) => this.mapearFacturaFront(f))
+            : [],
+        }))
+      );
+  }
+
   // --- NUEVOS MÉTODOS PARA ACTUALIZAR ESTADO EN EL BACKEND ---
   marcarComoPagado(uuid: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/xml/${encodeURIComponent(uuid)}/pagado`, {});

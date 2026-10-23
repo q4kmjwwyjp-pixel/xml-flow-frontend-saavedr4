@@ -1,0 +1,527 @@
+<div class="reporte-page-wrapper">
+  <!-- BARRA SUPERIOR DE NAVEGACIÓN Y ACCIONES (OCULTA AL IMPRIMIR) -->
+  <div class="top-action-bar no-print">
+    <div class="nav-left">
+      <a routerLink="/dashboard" class="btn btn-back">
+        ← Regresar al Dashboard
+      </a>
+      <a routerLink="/pagos-programados" class="btn btn-outline">
+        📅 Ir a Pagos Programados
+      </a>
+    </div>
+
+    <div class="actions-right">
+      <button
+        type="button"
+        class="btn btn-refresh"
+        (click)="cargarFacturas()"
+        [disabled]="cargando()"
+        title="Actualizar datos desde el servidor">
+        🔄 Actualizar Datos
+      </button>
+      <button
+        type="button"
+        class="btn btn-excel"
+        (click)="exportarCsvContabilidad()"
+        [disabled]="facturasFiltradas.length === 0">
+        📥 Exportar Cédula a Excel (.XLS)
+      </button>
+      <button
+        type="button"
+        class="btn btn-print"
+        (click)="imprimirReporte()"
+        [disabled]="facturasFiltradas.length === 0">
+        🖨️ Imprimir / Guardar PDF Oficial
+      </button>
+    </div>
+  </div>
+
+  <!-- PANEL DE FILTROS INTELIGENTES DE PERIODO (OCULTO AL IMPRIMIR) -->
+  <section class="filter-card no-print" aria-label="Filtros del generador de reportes">
+    <div class="filter-card-header">
+      <div>
+        <h2 class="filter-title">🎛️ Parámetros del Reporte Semanal y Contable</h2>
+        <p class="filter-subtitle">
+          Filtra por periodo de pago, fecha de emisión fiscal o recepción para generar la póliza de dispersión o auditoría.
+        </p>
+      </div>
+
+      <!-- Botones rápidos de periodo -->
+      <div class="quick-periods">
+        <span class="quick-label">Periodo rápido:</span>
+        <button
+          type="button"
+          class="chip-btn"
+          [class.active]="periodoActivo === 'ESTA_SEMANA'"
+          (click)="seleccionarPeriodoRapido('ESTA_SEMANA')">
+          Esta Semana (Lun-Dom)
+        </button>
+        <button
+          type="button"
+          class="chip-btn"
+          [class.active]="periodoActivo === 'SEMANA_PASADA'"
+          (click)="seleccionarPeriodoRapido('SEMANA_PASADA')">
+          Semana Pasada
+        </button>
+        <button
+          type="button"
+          class="chip-btn"
+          [class.active]="periodoActivo === 'PROXIMA_SEMANA'"
+          (click)="seleccionarPeriodoRapido('PROXIMA_SEMANA')">
+          Próxima Semana (Pagos a programar)
+        </button>
+        <button
+          type="button"
+          class="chip-btn"
+          [class.active]="periodoActivo === 'ESTE_MES'"
+          (click)="seleccionarPeriodoRapido('ESTE_MES')">
+          Este Mes
+        </button>
+        <button
+          type="button"
+          class="chip-btn"
+          [class.active]="periodoActivo === 'TODO'"
+          (click)="seleccionarPeriodoRapido('TODO')">
+          Ver Todo
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-grid">
+      <!-- Selector del criterio de fecha -->
+      <div class="field-group">
+        <label for="criterioFecha">📌 Criterio de Fecha</label>
+        <select
+          id="criterioFecha"
+          [(ngModel)]="criterioFecha"
+          (change)="aplicarFiltros()"
+          class="form-input">
+          <option value="programacion">Fecha Programada de Pago (Tesorería)</option>
+          <option value="emision">Fecha de Emisión del CFDI (Contabilidad)</option>
+          <option value="recepcion">Fecha de Recepción/Escaneo</option>
+        </select>
+      </div>
+
+      <!-- Fecha Inicio -->
+      <div class="field-group">
+        <label for="fechaInicio">🗓️ Fecha Inicio (Desde)</label>
+        <input
+          id="fechaInicio"
+          type="date"
+          [(ngModel)]="fechaInicio"
+          (change)="onCambioFechaManual()"
+          class="form-input" />
+      </div>
+
+      <!-- Fecha Fin -->
+      <div class="field-group">
+        <label for="fechaFin">🗓️ Fecha Fin (Hasta)</label>
+        <input
+          id="fechaFin"
+          type="date"
+          [(ngModel)]="fechaFin"
+          (change)="onCambioFechaManual()"
+          class="form-input" />
+      </div>
+
+      <!-- Estado -->
+      <div class="field-group">
+        <label for="filtroEstado">🏷️ Estado de Factura</label>
+        <select
+          id="filtroEstado"
+          [(ngModel)]="filtroEstado"
+          (change)="aplicarFiltros()"
+          class="form-input">
+          <option value="TODOS">Todos los estados</option>
+          <option value="pendiente">🟡 Pendiente (En plazo)</option>
+          <option value="pagado">🟢 Pagado / Liquidado</option>
+          <option value="vencido">🔴 Vencido / Exigible</option>
+        </select>
+      </div>
+
+      <!-- Condición -->
+      <div class="field-group">
+        <label for="filtroCondicion">💳 Condición / Método SAT</label>
+        <select
+          id="filtroCondicion"
+          [(ngModel)]="filtroCondicion"
+          (change)="aplicarFiltros()"
+          class="form-input">
+          <option value="TODAS">Todas (Crédito y Contado)</option>
+          <option value="PPD">PPD - Crédito / Diferido</option>
+          <option value="PUE">PUE - Contado (Una exhibición)</option>
+        </select>
+      </div>
+
+      <!-- Proveedor específico -->
+      <div class="field-group">
+        <label for="filtroProveedor">🏢 Proveedor Emisor</label>
+        <select
+          id="filtroProveedor"
+          [(ngModel)]="filtroProveedorRfc"
+          (change)="aplicarFiltros()"
+          class="form-input">
+          <option value="TODOS">Todos los proveedores ({{ proveedoresDisponibles.length }})</option>
+          @for (prov of proveedoresDisponibles; track prov.rfc) {
+            <option [value]="prov.rfc">{{ prov.nombre }} ({{ prov.rfc }})</option>
+          }
+        </select>
+      </div>
+
+      <!-- Búsqueda libre -->
+      <div class="field-group search-span">
+        <label for="busquedaReporte">🔍 Búsqueda por Folio, UUID o RFC</label>
+        <div class="search-row">
+          <input
+            id="busquedaReporte"
+            type="text"
+            [(ngModel)]="busquedaTexto"
+            (input)="aplicarFiltros()"
+            placeholder="Ej. A-456, UUID, RFC o razón social..."
+            class="form-input" />
+          <button type="button" class="btn btn-clear" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESTADO DE CARGA O ERROR -->
+  @if (cargando()) {
+    <div class="loading-box no-print">
+      <div class="spinner"></div>
+      <h3>Generando cédula contable y financiera...</h3>
+      <p>Consultando comprobantes CFDI 4.0 validados en la base de datos.</p>
+    </div>
+  }
+
+  @if (errorCarga()) {
+    <div class="error-banner no-print">
+      <strong>⚠️ Error de conexión:</strong> {{ errorCarga() }}
+      <button type="button" class="btn btn-outline" (click)="cargarFacturas()">Reintentar</button>
+    </div>
+  }
+
+  <!-- DOCUMENTO OFICIAL DEL REPORTE (VISIBLE EN PANTALLA Y EN IMPRESIÓN / PDF) -->
+  @if (!cargando()) {
+    <article class="reporte-documento">
+      <!-- ENCABEZADO FORMAL / MEMBRETE DEL DOCUMENTO -->
+      <header class="membrete-header">
+        <div class="membrete-empresa">
+          <div class="membrete-badge">CÉDULA DE CONTABILIDAD Y TESORERÍA · CFDI 4.0</div>
+          <h1 class="empresa-nombre">Transportes de los Santos e Hijos</h1>
+          <p class="empresa-datos-fiscales">
+            <strong>RFC Receptor:</strong> TSH7311116TL4
+            <span class="sep">|</span>
+            <strong>Régimen Fiscal:</strong> 624 (Coordinados)
+            <span class="sep">|</span>
+            <strong>Uso CFDI Autorizado:</strong> G03 (Gastos en general)
+          </p>
+        </div>
+
+        <div class="membrete-meta">
+          <div class="meta-row">
+            <span class="meta-label">Folio de Cédula:</span>
+            <span class="meta-value mono">{{ folioReporte }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Criterio del Reporte:</span>
+            <span class="meta-value">{{ etiquetaCriterioFecha }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Periodo Consultado:</span>
+            <span class="meta-value highlight-period">{{ etiquetaRangoPeriodo }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Fecha/Hora de Emisión:</span>
+            <span class="meta-value">{{ fechaHoraEmisionReporte | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- SECCIÓN 1: RESUMEN FINANCIERO Y FISCAL (KPIs) -->
+      <section class="report-section">
+        <div class="section-heading">
+          <h2>1. Resumen Financiero, Fiscal y de Flujo de Efectivo</h2>
+          <span class="section-note">Importes expresados en Moneda Nacional ($ MXN)</span>
+        </div>
+
+        <!-- Fila A: Totales Fiscales (Subtotal, Impuestos, Gran Total) -->
+        <div class="kpi-grid-fiscal">
+          <div class="kpi-box kpi-neutral">
+            <span class="kpi-label">Total de CFDIs en el Periodo</span>
+            <span class="kpi-number">{{ kpis.totalCfdis }}</span>
+            <span class="kpi-foot">Comprobantes auditados en rango</span>
+          </div>
+
+          <div class="kpi-box kpi-blue">
+            <span class="kpi-label">Importe Subtotal Acumulado</span>
+            <span class="kpi-number">{{ kpis.subTotalAcumulado | currency:'MXN':'symbol':'1.2-2' }}</span>
+            <span class="kpi-foot">Base gravable antes de impuestos</span>
+          </div>
+
+          <div class="kpi-box kpi-indigo">
+            <span class="kpi-label">Impuestos Trasladados Est.</span>
+            <span class="kpi-number">{{ kpis.impuestosTrasladados | currency:'MXN':'symbol':'1.2-2' }}</span>
+            <span class="kpi-foot">Diferencia Fiscal (Total − Subtotal)</span>
+          </div>
+
+          <div class="kpi-box kpi-dark">
+            <span class="kpi-label">Gran Total Facturado ($ MXN)</span>
+            <span class="kpi-number">{{ kpis.granTotalFacturado | currency:'MXN':'symbol':'1.2-2' }}</span>
+            <span class="kpi-foot">100% del volumen del periodo</span>
+          </div>
+        </div>
+
+        <!-- Fila B: Desglose de Flujo de Efectivo (Semáforo de Tesorería) -->
+        <div class="kpi-grid-flujo">
+          <div class="flujo-card flujo-pagado">
+            <div class="flujo-header">
+              <span class="flujo-dot dot-green"></span>
+              <span class="flujo-title">Monto Ya Pagado / Liquidado</span>
+            </div>
+            <div class="flujo-amount">{{ kpis.montoPagado | currency:'MXN':'symbol':'1.2-2' }}</div>
+            <div class="flujo-meta">{{ kpis.cantidadPagadas }} comprobante(s) saldado(s)</div>
+          </div>
+
+          <div class="flujo-card flujo-pendiente">
+            <div class="flujo-header">
+              <span class="flujo-dot dot-amber"></span>
+              <span class="flujo-title">Monto Pendiente por Pagar (En Tiempo)</span>
+            </div>
+            <div class="flujo-amount">{{ kpis.montoPendienteEnTiempo | currency:'MXN':'symbol':'1.2-2' }}</div>
+            <div class="flujo-meta">{{ kpis.cantidadPendientesEnTiempo }} comprobante(s) dentro de plazo de crédito</div>
+          </div>
+
+          <div class="flujo-card flujo-vencido">
+            <div class="flujo-header">
+              <span class="flujo-dot dot-red"></span>
+              <span class="flujo-title">Monto Vencido / Exigible Inmediato</span>
+            </div>
+            <div class="flujo-amount">{{ kpis.montoVencidoExigible | currency:'MXN':'symbol':'1.2-2' }}</div>
+            <div class="flujo-meta">{{ kpis.cantidadVencidas }} comprobante(s) con plazo vencido</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 2: CONCENTRADO DE PAGO POR PROVEEDOR (AGRUPACIÓN PARA DISPERSIÓN) -->
+      <section class="report-section">
+        <div class="section-heading">
+          <h2 id="titulo-concentrado-proveedores">2. Concentrado de Pago y Dispersión por Proveedor</h2>
+          <span class="section-note">
+            Agrupación por RFC Emisor para transferencia bancaria semanal ({{ resumenProveedores.length }} proveedores)
+          </span>
+        </div>
+
+        <div
+          tabindex="0"
+          role="region"
+          aria-labelledby="titulo-concentrado-proveedores"
+          class="table-wrapper">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>RFC Emisor</th>
+                <th>Razón Social del Proveedor</th>
+                <th>Régimen Fiscal</th>
+                <th class="text-center">CFDIs</th>
+                <th class="text-right">Subtotal</th>
+                <th class="text-right">Impuestos</th>
+                <th class="text-right">Monto Pagado</th>
+                <th class="text-right highlight-col">Saldo Pendiente a Transferir</th>
+                <th class="text-right">Total Facturado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of resumenProveedores; track p.rfc) {
+                <tr>
+                  <th scope="row" class="mono font-semibold">{{ p.codigoProveedor }}</th>
+                  <td class="mono">{{ p.rfc }}</td>
+                  <td class="font-semibold">{{ p.nombre }}</td>
+                  <td class="text-small">{{ describirRegimen(p.regimenFiscal) }}</td>
+                  <td class="text-center">{{ p.cantidadFacturas }}</td>
+                  <td class="text-right mono">{{ p.subTotal | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono">{{ p.impuestos | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono text-success">{{ p.montoPagado | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono highlight-col font-bold">
+                    {{ p.saldoPendiente | currency:'MXN':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="text-right mono font-bold">{{ p.total | currency:'MXN':'symbol':'1.2-2' }}</td>
+                </tr>
+              }
+
+              @if (resumenProveedores.length === 0) {
+                <tr>
+                  <td colspan="10" class="empty-row">
+                    No existen proveedores con facturación en el periodo y filtros seleccionados.
+                  </td>
+                </tr>
+              }
+            </tbody>
+            @if (resumenProveedores.length > 0) {
+              <tfoot>
+                <tr class="totals-row">
+                  <td colspan="4" class="text-right font-bold">TOTALES POR PROVEEDORES:</td>
+                  <td class="text-center font-bold">{{ kpis.totalCfdis }}</td>
+                  <td class="text-right mono font-bold">{{ kpis.subTotalAcumulado | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono font-bold">{{ kpis.impuestosTrasladados | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono font-bold text-success">{{ kpis.montoPagado | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono font-bold highlight-col">
+                    {{ (kpis.montoPendienteEnTiempo + kpis.montoVencidoExigible) | currency:'MXN':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="text-right mono font-bold">{{ kpis.granTotalFacturado | currency:'MXN':'symbol':'1.2-2' }}</td>
+                </tr>
+              </tfoot>
+            }
+          </table>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 3: CÉDULA DETALLADA DE COMPROBANTES (CFDI 4.0) -->
+      <section class="report-section">
+        <div class="section-heading">
+          <h2 id="titulo-cedula-detallada">3. Cédula Detallada de Comprobantes Fiscales (CFDI 4.0)</h2>
+          <span class="section-note">
+            Relación analítica de facturas para póliza contable y auditoría SAT ({{ facturasFiltradas.length }} registros)
+          </span>
+        </div>
+
+        <div
+          tabindex="0"
+          role="region"
+          aria-labelledby="titulo-cedula-detallada"
+          class="table-wrapper">
+          <table class="report-table detailed-table">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th>UUID Fiscal (Timbre)</th>
+                <th>Proveedor (Nombre y RFC)</th>
+                <th>Uso CFDI / Régimen</th>
+                <th>Método / Forma Pago</th>
+                <th>Fecha Emisión</th>
+                <th>Fecha Límite Pago</th>
+                <th>Estatus de Plazo</th>
+                <th class="text-right">Subtotal</th>
+                <th class="text-right">Impuestos</th>
+                <th class="text-right">Total</th>
+                <th class="text-center">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of facturasFiltradas; track f.uuid || f.folio) {
+                @let estadoEf = obtenerEstadoEfectivo(f);
+                @let estatusPlazo = obtenerEstatusPlazo(f);
+                <tr>
+                  <th scope="row" class="mono font-bold">
+                    <a
+                      [routerLink]="['/pagos-programados', f.uuid]"
+                      class="folio-link"
+                      title="Ver auditoría individual de la factura">
+                      {{ f.folio }}
+                    </a>
+                  </th>
+                  <td class="mono uuid-cell" [title]="f.uuid || 'Sin UUID'">
+                    {{ f.uuid || 'N/A' }}
+                  </td>
+                  <td>
+                    <div class="cell-stack">
+                      <span class="font-semibold">{{ f.nombreProveedor }}</span>
+                      <span class="sub-text mono">{{ f.rfcEmisor }} · {{ f.codigoProveedor }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-stack">
+                      <span><strong>Uso:</strong> {{ f.usoCfdi || 'G03' }}</span>
+                      <span class="sub-text"><strong>Rég. Rec:</strong> {{ f.regimenReceptor || '624' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-stack">
+                      <span class="method-pill" [ngClass]="f.metodoPago.toLowerCase()">
+                        {{ f.metodoPago }} ({{ f.metodoPago === 'PPD' ? 'Crédito' : 'Contado' }})
+                      </span>
+                      <span class="sub-text">Forma: {{ describirFormaPago(f.formaPago) }}</span>
+                    </div>
+                  </td>
+                  <td class="mono whitespace-nowrap">{{ f.fechaEmision || f.fechaRevision || '—' }}</td>
+                  <td class="mono whitespace-nowrap font-semibold">
+                    {{ f.fechaProgramacionPago || f.fechaEmision || 'Contado' }}
+                  </td>
+                  <td>
+                    <span class="plazo-badge" [ngClass]="estatusPlazo.clase">
+                      {{ estatusPlazo.texto }}
+                    </span>
+                  </td>
+                  <td class="text-right mono">{{ obtenerSubtotal(f) | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono">{{ obtenerImpuestos(f) | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-right mono font-bold">{{ f.total | currency:'MXN':'symbol':'1.2-2' }}</td>
+                  <td class="text-center">
+                    <span class="estado-pill" [ngClass]="estadoEf">
+                      {{ estadoEf | uppercase }}
+                    </span>
+                  </td>
+                </tr>
+              }
+
+              @if (facturasFiltradas.length === 0) {
+                <tr>
+                  <td colspan="12" class="empty-row">
+                    No se encontraron comprobantes CFDI 4.0 que coincidan con el periodo o filtros seleccionados.
+                  </td>
+                </tr>
+              }
+            </tbody>
+            @if (facturasFiltradas.length > 0) {
+              <tfoot>
+                <tr class="totals-row">
+                  <td colspan="8" class="text-right font-bold">
+                    SUMAS TOTALES DE LA CÉDULA ({{ kpis.totalCfdis }} COMPROBANTES):
+                  </td>
+                  <td class="text-right mono font-bold">
+                    {{ kpis.subTotalAcumulado | currency:'MXN':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="text-right mono font-bold">
+                    {{ kpis.impuestosTrasladados | currency:'MXN':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="text-right mono font-bold total-grand-cell">
+                    {{ kpis.granTotalFacturado | currency:'MXN':'symbol':'1.2-2' }}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            }
+          </table>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 4: PIE DE FIRMAS PARA IMPRESIÓN Y CONTROL INTERNO -->
+      <footer class="firmas-section">
+        <div class="firmas-intro">
+          Certificación de Revisión Fiscal CFDI 4.0 y Autorización de Dispersión de Fondos — Transportes de los Santos e Hijos (TSH7311116TL4)
+        </div>
+        <div class="firmas-grid">
+          <div class="firma-bloque">
+            <div class="firma-linea"></div>
+            <p class="firma-cargo">Elaboró: Recepción XML</p>
+            <p class="firma-sub">Captura y Validación de Comprobantes</p>
+          </div>
+
+          <div class="firma-bloque">
+            <div class="firma-linea"></div>
+            <p class="firma-cargo">Validó: Contabilidad General</p>
+            <p class="firma-sub">Revisión Fiscal SAT (Régimen 624 / Uso G03)</p>
+          </div>
+
+          <div class="firma-bloque">
+            <div class="firma-linea"></div>
+            <p class="firma-cargo">Autorizó Dispersión: Tesorería / Dirección</p>
+            <p class="firma-sub">Liberación de Transferencias Bancarias</p>
+          </div>
+        </div>
+      </footer>
+    </article>
+  }
+</div>

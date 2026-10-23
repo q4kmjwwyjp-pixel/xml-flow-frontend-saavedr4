@@ -6,8 +6,12 @@ import { Dashboard } from './features/dashboard/dashboard';
 import { UploadPage } from './features/upload-page/upload-page';
 import { PagosProgramados } from './features/pagos-programados/pagos-programados';
 import { DetalleFactura } from './features/detalle-factura/detalle-factura';
+import { ReportesSemanales } from './features/reportes-semanales/reportes-semanales';
 
 export const routes: Routes = [
+  {
+    path: 'reportes-semanales', component: ReportesSemanales
+  },
   {
     path: 'pagos-programados', component: PagosProgramados
   },
