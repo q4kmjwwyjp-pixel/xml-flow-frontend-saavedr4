@@ -96,4 +96,8 @@ export class Dashboard implements OnInit {
     const hoy = new Date().toISOString().split('T')[0];
     return fecha.startsWith(hoy);
   }
+
+  irAProveedores(): void {
+  this.router.navigateByUrl('/proveedores');
+}
 }

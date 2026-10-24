@@ -7,6 +7,8 @@ import { UploadPage } from './features/upload-page/upload-page';
 import { PagosProgramados } from './features/pagos-programados/pagos-programados';
 import { DetalleFactura } from './features/detalle-factura/detalle-factura';
 import { ReportesSemanales } from './features/reportes-semanales/reportes-semanales';
+import { Proveedores } from './features/proveedores/proveedores.component';
+
 
 export const routes: Routes = [
   {
@@ -55,5 +57,9 @@ export const routes: Routes = [
   {
     path: "dashboard",
     component: Dashboard
+  },
+  {
+    path: "proveedores",
+    component: Proveedores
   }
 ];
