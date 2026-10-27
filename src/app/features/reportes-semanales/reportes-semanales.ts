@@ -758,28 +758,82 @@ export class ReportesSemanales implements OnInit {
 </body>
 </html>`;
 
-    const blob = new Blob([htmlExcel], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
     const sufijoFecha =
       this.fechaInicio && this.fechaFin
         ? `${this.fechaInicio}_a_${this.fechaFin}`
         : new Date().toISOString().split('T')[0];
 
+    const nombreArchivo = `Cedula_Contable_XmlFlow_${sufijoFecha}.xls`;
+    const mimeType = 'application/vnd.ms-excel';
+
+    // 1. Soporte nativo para APK de Android (puente JavascriptInterface en MainActivity.java)
+    const androidNative = typeof window !== 'undefined' ? (window as any).AndroidNative : null;
+    if (androidNative && typeof androidNative.saveBase64File === 'function') {
+      const utf8Bytes = new TextEncoder().encode(htmlExcel);
+      let binary = '';
+      for (let i = 0; i < utf8Bytes.length; i++) {
+        binary += String.fromCharCode(utf8Bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      androidNative.saveBase64File(base64Data, nombreArchivo, mimeType);
+      return;
+    }
+
+    const blob = new Blob([htmlExcel], { type: `${mimeType};charset=utf-8;` });
+
+    // 2. Segundo método para móviles/tablets (Web Share API con archivos si no se ha recompilado el puente Java)
+    const esMovilOTablet =
+      typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (
+      esMovilOTablet &&
+      typeof navigator !== 'undefined' &&
+      typeof navigator.canShare === 'function' &&
+      typeof navigator.share === 'function'
+    ) {
+      try {
+        const archivoCompartir = new File([blob], nombreArchivo, { type: mimeType });
+        if (navigator.canShare({ files: [archivoCompartir] })) {
+          navigator
+            .share({
+              files: [archivoCompartir],
+              title: nombreArchivo,
+              text: 'Cédula Contable y de Tesorería CFDI 4.0',
+            })
+            .catch((err) => console.warn('Compartir cancelado o no disponible:', err));
+          return;
+        }
+      } catch (e) {
+        console.warn('Fallback a descarga directa:', e);
+      }
+    }
+
+    // 3. Descarga directa tradicional en navegador de PC
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `Cedula_Contable_XmlFlow_${sufijoFecha}.xls`);
+    link.setAttribute('download', nombreArchivo);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
 
-  /** Dispara la impresión nativa / guardado como PDF con formato de póliza contable */
+  /** Dispara la impresión nativa / guardado como PDF con formato de póliza contable (PC y APK Android) */
   imprimirReporte(): void {
     this.fechaHoraEmisionReporte = new Date();
-    if (typeof window !== 'undefined') {
-      window.print();
+    if (typeof window === 'undefined') return;
+
+    const sufijoFecha =
+      this.fechaInicio && this.fechaFin
+        ? `${this.fechaInicio}_a_${this.fechaFin}`
+        : new Date().toISOString().split('T')[0];
+
+    const androidNative = (window as any).AndroidNative;
+    if (androidNative && typeof androidNative.printPage === 'function') {
+      androidNative.printPage(`Cedula_Contable_XmlFlow_${sufijoFecha}`);
+      return;
     }
+
+    window.print();
   }
 }
