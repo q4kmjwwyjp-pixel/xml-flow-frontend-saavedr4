@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, ChangeDetectorRef } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import * as XLSXStyle from 'xlsx-js-style';
 import { FacturaService } from '../../core/services/factura.service';
 import { FacturaResumen } from '../../core/models/factura.model';
 import { calcularVencimiento, InfoVencimiento } from '../../core/utils/factura-vencimiento';
@@ -12,6 +13,8 @@ import {
   USOS_CFDI,
   describirClave,
 } from '../../core/utils/catalogos-sat';
+
+const XLSX: typeof XLSXStyle = (XLSXStyle as any).default || XLSXStyle;
 
 export type CriterioFecha = 'programacion' | 'emision' | 'recepcion';
 export type PeriodoRapido = 'ESTA_SEMANA' | 'SEMANA_PASADA' | 'PROXIMA_SEMANA' | 'ESTE_MES' | 'TODO' | 'PERSONALIZADO';
@@ -474,314 +477,516 @@ export class ReportesSemanales implements OnInit {
   }
 
   /**
-   * Exporta la cédula completa a un archivo Excel (.xls) enriquecido (SpreadsheetML / HTML para Excel)
-   * con anchos de columna predefinidos (<colgroup>), diseño corporativo (#0f2247 / #1e3a8a / #e2e8f0),
-   * bordes de celda, formato de moneda nativo ($#,##0.00) y colores semánticos por estado.
+   * Exporta la cédula completa a un archivo OpenXML binario real (.xlsx) con estilos nativos de Office
+   * usando xlsx-js-style, 100% compatible tanto con Microsoft Excel para Android como con Excel de PC.
    */
   exportarCsvContabilidad(): void {
-    const esc = (valor: any): string => {
-      if (valor === null || valor === undefined) return '';
-      return String(valor)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    const CURRENCY_FMT = '$#,##0.00';
+
+    const borderThinSlate: XLSXStyle.CellStyle['border'] = {
+      top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+      bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+      left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+      right: { style: 'thin', color: { rgb: 'CBD5E1' } },
     };
 
-    const numVal = (n: number): string => (Number(n) || 0).toFixed(2);
-
-    // Estilos inline reutilizables para compatibilidad 100% con Microsoft Excel (white-space: nowrap evita cortes verticales)
-    const borderCell = 'border: 1px solid #cbd5e1; white-space: nowrap;';
-    const styleMembreteTitulo =
-      'background-color: #0f2247; color: #ffffff; font-family: Calibri, Arial, sans-serif; font-size: 15pt; font-weight: bold; text-align: left; vertical-align: middle; padding: 10px; white-space: nowrap;';
-    const styleMembreteSub =
-      'background-color: #0f2247; color: #e2e8f0; font-family: Calibri, Arial, sans-serif; font-size: 11pt; font-weight: bold; text-align: left; vertical-align: middle; padding: 6px 10px; white-space: nowrap;';
-    const styleMetaLabel =
-      `background-color: #e2e8f0; color: #0f2247; font-family: Calibri, Arial, sans-serif; font-size: 10pt; font-weight: bold; ${borderCell} padding: 6px;`;
-    const styleMetaVal =
-      `background-color: #f8fafc; color: #0f172a; font-family: Calibri, Arial, sans-serif; font-size: 10pt; ${borderCell} padding: 6px;`;
-
-    const styleSectionBanner =
-      'background-color: #1e3a8a; color: #ffffff; font-family: Calibri, Arial, sans-serif; font-size: 11pt; font-weight: bold; text-align: left; vertical-align: middle; padding: 8px 10px; border: 1px solid #0f2247; white-space: nowrap;';
-    const styleTh =
-      'background-color: #e2e8f0; color: #0f2247; font-family: Calibri, Arial, sans-serif; font-size: 10pt; font-weight: bold; text-align: center; vertical-align: middle; border: 1px solid #94a3b8; padding: 8px; white-space: nowrap;';
-    const styleTdText =
-      `background-color: #ffffff; color: #0f172a; font-family: Calibri, Arial, sans-serif; font-size: 10pt; text-align: left; vertical-align: middle; ${borderCell} padding: 6px; mso-number-format:'\\@';`;
-    const styleTdCenter =
-      `background-color: #ffffff; color: #0f172a; font-family: Calibri, Arial, sans-serif; font-size: 10pt; text-align: center; vertical-align: middle; ${borderCell} padding: 6px;`;
-    const styleTdMoney =
-      `background-color: #ffffff; color: #0f172a; font-family: Calibri, Arial, sans-serif; font-size: 10pt; text-align: right; vertical-align: middle; ${borderCell} padding: 6px; mso-number-format:'\\$\\#\\,\\#\\#0\\.00';`;
-    const styleTdMoneyHighlight =
-      `background-color: #eff6ff; color: #1e3a8a; font-family: Calibri, Arial, sans-serif; font-size: 10pt; font-weight: bold; text-align: right; vertical-align: middle; ${borderCell} padding: 6px; mso-number-format:'\\$\\#\\,\\#\\#0\\.00';`;
-    const styleTotalLabel =
-      'background-color: #e2e8f0; color: #0f2247; font-family: Calibri, Arial, sans-serif; font-size: 10.5pt; font-weight: bold; text-align: right; vertical-align: middle; border-top: 2px solid #0f2247; border-bottom: 2px solid #0f2247; border-left: 1px solid #94a3b8; border-right: 1px solid #94a3b8; padding: 8px; white-space: nowrap;';
-    const styleTotalMoney =
-      "background-color: #e2e8f0; color: #0f2247; font-family: Calibri, Arial, sans-serif; font-size: 10.5pt; font-weight: bold; text-align: right; vertical-align: middle; border-top: 2px solid #0f2247; border-bottom: 2px solid #0f2247; border-left: 1px solid #94a3b8; border-right: 1px solid #94a3b8; padding: 8px; white-space: nowrap; mso-number-format:'\\$\\#\\,\\#\\#0\\.00';";
-    const styleGrandTotalMoney =
-      "background-color: #dbeafe; color: #1e3a8a; font-family: Calibri, Arial, sans-serif; font-size: 11pt; font-weight: bold; text-align: right; vertical-align: middle; border-top: 2px solid #0f2247; border-bottom: 2px solid #0f2247; border-left: 1px solid #94a3b8; border-right: 1px solid #94a3b8; padding: 8px; white-space: nowrap; mso-number-format:'\\$\\#\\,\\#\\#0\\.00';";
-
-    // Estilos semánticos de estado (PAGADO = verde, PENDIENTE = amarillo, VENCIDO = rojo claro)
-    const obtenerEstiloEstado = (estado: 'pagado' | 'pendiente' | 'vencido', esMoneda: boolean = false): string => {
-      const formatoMoneda = esMoneda ? "mso-number-format:'\\$\\#\\,\\#\\#0\\.00'; text-align: right;" : 'text-align: center;';
-      if (estado === 'pagado') {
-        return `background-color: #dcfce7; color: #15803d; font-family: Calibri, Arial, sans-serif; font-size: 10pt; font-weight: bold; vertical-align: middle; ${borderCell} padding: 6px; ${formatoMoneda}`;
-      }
-      if (estado === 'vencido') {
-        return `background-color: #fee2e2; color: #b91c1c; font-family: Calibri, Arial, sans-serif; font-size: 10pt; font-weight: bold; vertical-align: middle; ${borderCell} padding: 6px; ${formatoMoneda}`;
-      }
-      return `background-color: #fef3c7; color: #b45309; font-family: Calibri, Arial, sans-serif; font-size: 10pt; font-weight: bold; vertical-align: middle; ${borderCell} padding: 6px; ${formatoMoneda}`;
+    const borderHeader: XLSXStyle.CellStyle['border'] = {
+      top: { style: 'thin', color: { rgb: '94A3B8' } },
+      bottom: { style: 'thin', color: { rgb: '94A3B8' } },
+      left: { style: 'thin', color: { rgb: '94A3B8' } },
+      right: { style: 'thin', color: { rgb: '94A3B8' } },
     };
 
-    // Anchos amplios en píxeles para las 20 columnas de modo que ningún texto o encabezado se corte
-    const anchosColumnasPx = [
-      160, // Col 1: Folio / Código Proveedor / Total CFDIs
-      320, // Col 2: UUID Fiscal (36 chars) / RFC Emisor / Subtotal Acumulado
-      310, // Col 3: Razón Social Proveedor / Impuestos Trasladados
-      290, // Col 4: RFC Emisor / Régimen Fiscal / Gran Total Facturado
-      330, // Col 5: Razón Social Emisor / Cant. Facturas / Monto Pagado
-      290, // Col 6: Régimen Emisor / Subtotal Prov / Monto Pendiente
-      245, // Col 7: Régimen Receptor / Impuestos Prov / Monto Vencido
-      250, // Col 8: Uso CFDI / Monto Pagado Prov
-      260, // Col 9: Método Pago / Saldo Pendiente a Dispersar
-      270, // Col 10: Forma Pago / Total Facturado Prov
-      150, // Col 11: Condición Crédito
-      125, // Col 12: Días Crédito
-      155, // Col 13: Fecha Emisión CFDI
-      155, // Col 14: Fecha Recepción XML
-      185, // Col 15: Fecha Límite / Programada Pago
-      205, // Col 16: Estatus de Plazo
-      165, // Col 17: Subtotal (MXN)
-      175, // Col 18: Impuestos Trasladados (MXN)
-      175, // Col 19: Total (MXN)
-      165, // Col 20: Estado Contable
+    const borderBanner: XLSXStyle.CellStyle['border'] = {
+      top: { style: 'thin', color: { rgb: '0F2247' } },
+      bottom: { style: 'thin', color: { rgb: '0F2247' } },
+      left: { style: 'thin', color: { rgb: '0F2247' } },
+      right: { style: 'thin', color: { rgb: '0F2247' } },
+    };
+
+    const borderTotals: XLSXStyle.CellStyle['border'] = {
+      top: { style: 'medium', color: { rgb: '0F2247' } },
+      bottom: { style: 'medium', color: { rgb: '0F2247' } },
+      left: { style: 'thin', color: { rgb: '94A3B8' } },
+      right: { style: 'thin', color: { rgb: '94A3B8' } },
+    };
+
+    // Estilos corporativos principales
+    const styleMembreteTitulo: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: '0F2247' } },
+      font: { name: 'Calibri', sz: 14, bold: true, color: { rgb: 'FFFFFF' } },
+      alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+      border: borderBanner,
+    };
+
+    const styleMembreteSub: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: '0F2247' } },
+      font: { name: 'Calibri', sz: 10.5, bold: true, color: { rgb: 'E2E8F0' } },
+      alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+      border: borderBanner,
+    };
+
+    const styleMetaLabel: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'E2E8F0' } },
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '0F2247' } },
+      alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+      border: borderHeader,
+    };
+
+    const styleMetaVal: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'F8FAFC' } },
+      font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '0F172A' } },
+      alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+      border: borderThinSlate,
+    };
+
+    const styleMetaValBold: XLSXStyle.CellStyle = {
+      ...styleMetaVal,
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '0F172A' } },
+    };
+
+    const styleMetaValAccent: XLSXStyle.CellStyle = {
+      ...styleMetaVal,
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '1E3A8A' } },
+    };
+
+    const styleSectionBanner: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: '1E3A8A' } },
+      font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+      alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+      border: borderBanner,
+    };
+
+    const styleTh: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'E2E8F0' } },
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '0F2247' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
+      border: borderHeader,
+    };
+
+    const styleTdText: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'FFFFFF' } },
+      font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '0F172A' } },
+      alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+      border: borderThinSlate,
+    };
+
+    const styleTdTextBold: XLSXStyle.CellStyle = {
+      ...styleTdText,
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '0F172A' } },
+    };
+
+    const styleTdUuid: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'FFFFFF' } },
+      font: { name: 'Consolas', sz: 9.5, bold: false, color: { rgb: '0F172A' } },
+      alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+      border: borderThinSlate,
+    };
+
+    const styleTdCenter: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'FFFFFF' } },
+      font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '0F172A' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
+      border: borderThinSlate,
+    };
+
+    const styleTdCenterBold: XLSXStyle.CellStyle = {
+      ...styleTdCenter,
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '0F172A' } },
+    };
+
+    const styleTdMoney: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'FFFFFF' } },
+      font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '0F172A' } },
+      alignment: { horizontal: 'right', vertical: 'center', wrapText: false },
+      border: borderThinSlate,
+      numFmt: CURRENCY_FMT,
+    };
+
+    const styleTdMoneyBold: XLSXStyle.CellStyle = {
+      ...styleTdMoney,
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '0F172A' } },
+    };
+
+    const styleTdMoneyHighlight: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'EFF6FF' } },
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '1E3A8A' } },
+      alignment: { horizontal: 'right', vertical: 'center', wrapText: false },
+      border: borderThinSlate,
+      numFmt: CURRENCY_FMT,
+    };
+
+    const styleTotalLabel: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'E2E8F0' } },
+      font: { name: 'Calibri', sz: 10.5, bold: true, color: { rgb: '0F2247' } },
+      alignment: { horizontal: 'right', vertical: 'center', wrapText: false },
+      border: borderTotals,
+    };
+
+    const styleTotalCenter: XLSXStyle.CellStyle = {
+      ...styleTotalLabel,
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
+    };
+
+    const styleTotalMoney: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'E2E8F0' } },
+      font: { name: 'Calibri', sz: 10.5, bold: true, color: { rgb: '0F2247' } },
+      alignment: { horizontal: 'right', vertical: 'center', wrapText: false },
+      border: borderTotals,
+      numFmt: CURRENCY_FMT,
+    };
+
+    const styleGrandTotalMoney: XLSXStyle.CellStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: 'DBEAFE' } },
+      font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: '1E3A8A' } },
+      alignment: { horizontal: 'right', vertical: 'center', wrapText: false },
+      border: borderTotals,
+      numFmt: CURRENCY_FMT,
+    };
+
+    // Estilos semánticos de estatus (PAGADO = DCFCE7/15803D, PENDIENTE = FEF3C7/B45309, VENCIDO = FEE2E2/B91C1C)
+    const obtenerEstiloSemantico = (
+      estado: 'pagado' | 'pendiente' | 'vencido',
+      esMoneda: boolean = false,
+      esFilaTotal: boolean = false
+    ): XLSXStyle.CellStyle => {
+      const colores =
+        estado === 'pagado'
+          ? { bg: 'DCFCE7', fg: '15803D' }
+          : estado === 'vencido'
+          ? { bg: 'FEE2E2', fg: 'B91C1C' }
+          : { bg: 'FEF3C7', fg: 'B45309' };
+
+      const style: XLSXStyle.CellStyle = {
+        fill: { patternType: 'solid', fgColor: { rgb: colores.bg } },
+        font: { name: 'Calibri', sz: esFilaTotal ? 10.5 : 10, bold: true, color: { rgb: colores.fg } },
+        alignment: { horizontal: esMoneda ? 'right' : 'center', vertical: 'center', wrapText: false },
+        border: esFilaTotal ? borderTotals : borderThinSlate,
+      };
+      if (esMoneda) {
+        style.numFmt = CURRENCY_FMT;
+      }
+      return style;
+    };
+
+    // Constructores de celdas tipadas para AOA
+    const strCell = (val: any, s: XLSXStyle.CellStyle): XLSXStyle.CellObject => ({
+      v: val === null || val === undefined ? '' : String(val),
+      t: 's',
+      s,
+    });
+
+    const intCell = (val: number, s: XLSXStyle.CellStyle): XLSXStyle.CellObject => ({
+      v: Number(val) || 0,
+      t: 'n',
+      s,
+    });
+
+    const moneyCell = (val: number, s: XLSXStyle.CellStyle): XLSXStyle.CellObject => ({
+      v: Number((Number(val) || 0).toFixed(2)),
+      t: 'n',
+      z: CURRENCY_FMT,
+      s,
+    });
+
+    const aoa: XLSXStyle.CellObject[][] = [];
+    const rows: XLSXStyle.RowInfo[] = [];
+    const merges: XLSXStyle.Range[] = [];
+
+    const pushRow = (cells: XLSXStyle.CellObject[], hpt: number): number => {
+      const idx = aoa.length;
+      aoa.push(cells);
+      rows.push({ hpt });
+      return idx;
+    };
+
+    // Rellena un rango combinado aplicando el mismo estilo en todas las celdas del merge para mantener bordes uniformes
+    const pushMergedBanner = (texto: string, colSpan: number, style: XLSXStyle.CellStyle, hpt: number): void => {
+      const rowCells: XLSXStyle.CellObject[] = [strCell(texto, style)];
+      for (let c = 1; c < colSpan; c++) {
+        rowCells.push(strCell('', style));
+      }
+      const rIdx = pushRow(rowCells, hpt);
+      merges.push({ s: { r: rIdx, c: 0 }, e: { r: rIdx, c: colSpan - 1 } });
+    };
+
+    // =========================================================================
+    // ENCABEZADO / MEMBRETE CORPORATIVO
+    // =========================================================================
+    pushMergedBanner(
+      'TRANSPORTES DE LOS SANTOS E HIJOS — CÉDULA CONTABLE Y DE TESORERÍA (CFDI 4.0)',
+      10,
+      styleMembreteTitulo,
+      32
+    );
+
+    pushMergedBanner(
+      'RFC Receptor: TSH7311116TL4  |  Régimen Fiscal: 624 - Coordinados  |  Uso CFDI Autorizado: G03 - Gastos en general',
+      10,
+      styleMembreteSub,
+      26
+    );
+
+    const metaRowIdx = pushRow(
+      [
+        strCell('Folio de Reporte:', styleMetaLabel),
+        strCell(this.folioReporte, styleMetaValBold),
+        strCell('Fecha y Hora de Emisión:', styleMetaLabel),
+        strCell(this.fechaHoraEmisionReporte.toLocaleString('es-MX'), styleMetaVal),
+        strCell('Criterio de Periodo:', styleMetaLabel),
+        strCell(this.etiquetaCriterioFecha, styleMetaValBold),
+        strCell('', styleMetaValBold),
+        strCell('Rango Consultado:', styleMetaLabel),
+        strCell(this.etiquetaRangoPeriodo, styleMetaValAccent),
+        strCell('', styleMetaValAccent),
+      ],
+      26
+    );
+    merges.push(
+      { s: { r: metaRowIdx, c: 5 }, e: { r: metaRowIdx, c: 6 } },
+      { s: { r: metaRowIdx, c: 8 }, e: { r: metaRowIdx, c: 9 } }
+    );
+
+    pushRow([], 14);
+
+    // =========================================================================
+    // SECCIÓN I: RESUMEN FINANCIERO Y FLUJO DE EFECTIVO
+    // =========================================================================
+    pushMergedBanner('I. RESUMEN FINANCIERO, FISCAL Y DE FLUJO DE EFECTIVO DEL PERIODO', 7, styleSectionBanner, 28);
+
+    pushRow(
+      [
+        strCell('Total CFDIs', styleTh),
+        strCell('Subtotal Acumulado (MXN)', styleTh),
+        strCell('Impuestos Trasladados Est. (MXN)', styleTh),
+        strCell('Gran Total Facturado (MXN)', styleTh),
+        strCell('Monto Pagado / Liquidado (MXN)', styleTh),
+        strCell('Monto Pendiente en Tiempo (MXN)', styleTh),
+        strCell('Monto Vencido / Exigible (MXN)', styleTh),
+      ],
+      26
+    );
+
+    pushRow(
+      [
+        intCell(this.kpis.totalCfdis, styleTdCenterBold),
+        moneyCell(this.kpis.subTotalAcumulado, styleTdMoneyBold),
+        moneyCell(this.kpis.impuestosTrasladados, styleTdMoneyBold),
+        moneyCell(this.kpis.granTotalFacturado, styleGrandTotalMoney),
+        moneyCell(this.kpis.montoPagado, obtenerEstiloSemantico('pagado', true, false)),
+        moneyCell(this.kpis.montoPendienteEnTiempo, obtenerEstiloSemantico('pendiente', true, false)),
+        moneyCell(this.kpis.montoVencidoExigible, obtenerEstiloSemantico('vencido', true, false)),
+      ],
+      26
+    );
+
+    pushRow([], 14);
+
+    // =========================================================================
+    // SECCIÓN II: CONCENTRADO DE PAGO Y DISPERSIÓN POR PROVEEDOR
+    // =========================================================================
+    pushMergedBanner(
+      `II. CONCENTRADO DE PAGO Y DISPERSIÓN SEMANAL POR PROVEEDOR (${this.resumenProveedores.length} PROVEEDORES)`,
+      10,
+      styleSectionBanner,
+      28
+    );
+
+    pushRow(
+      [
+        strCell('Código Proveedor', styleTh),
+        strCell('RFC Emisor', styleTh),
+        strCell('Razón Social Proveedor', styleTh),
+        strCell('Régimen Fiscal Emisor', styleTh),
+        strCell('Cant. Facturas', styleTh),
+        strCell('Subtotal (MXN)', styleTh),
+        strCell('Impuestos (MXN)', styleTh),
+        strCell('Monto Pagado (MXN)', styleTh),
+        strCell('Saldo Pendiente a Dispersar (MXN)', styleTh),
+        strCell('Total Facturado (MXN)', styleTh),
+      ],
+      26
+    );
+
+    for (const p of this.resumenProveedores) {
+      pushRow(
+        [
+          strCell(p.codigoProveedor, styleTdCenterBold),
+          strCell(p.rfc, styleTdCenter),
+          strCell(p.nombre, styleTdTextBold),
+          strCell(this.describirRegimen(p.regimenFiscal), styleTdText),
+          intCell(p.cantidadFacturas, styleTdCenterBold),
+          moneyCell(p.subTotal, styleTdMoney),
+          moneyCell(p.impuestos, styleTdMoney),
+          moneyCell(p.montoPagado, obtenerEstiloSemantico('pagado', true, false)),
+          moneyCell(
+            p.saldoPendiente,
+            p.saldoPendiente > 0 ? obtenerEstiloSemantico('pendiente', true, false) : styleTdMoneyHighlight
+          ),
+          moneyCell(p.total, styleTdMoneyBold),
+        ],
+        24
+      );
+    }
+
+    const totalProvRowIdx = pushRow(
+      [
+        strCell('TOTALES POR PROVEEDORES:', styleTotalLabel),
+        strCell('', styleTotalLabel),
+        strCell('', styleTotalLabel),
+        strCell('', styleTotalLabel),
+        intCell(this.kpis.totalCfdis, styleTotalCenter),
+        moneyCell(this.kpis.subTotalAcumulado, styleTotalMoney),
+        moneyCell(this.kpis.impuestosTrasladados, styleTotalMoney),
+        moneyCell(this.kpis.montoPagado, obtenerEstiloSemantico('pagado', true, true)),
+        moneyCell(
+          this.kpis.montoPendienteEnTiempo + this.kpis.montoVencidoExigible,
+          obtenerEstiloSemantico('pendiente', true, true)
+        ),
+        moneyCell(this.kpis.granTotalFacturado, styleGrandTotalMoney),
+      ],
+      26
+    );
+    merges.push({ s: { r: totalProvRowIdx, c: 0 }, e: { r: totalProvRowIdx, c: 3 } });
+
+    pushRow([], 14);
+
+    // =========================================================================
+    // SECCIÓN III: CÉDULA DETALLADA DE COMPROBANTES CFDI 4.0
+    // =========================================================================
+    pushMergedBanner(
+      `III. CÉDULA DETALLADA DE COMPROBANTES FISCALES DIGITALES CFDI 4.0 (${this.facturasFiltradas.length} REGISTROS)`,
+      20,
+      styleSectionBanner,
+      28
+    );
+
+    pushRow(
+      [
+        strCell('Folio', styleTh),
+        strCell('UUID Fiscal (Timbre SAT)', styleTh),
+        strCell('Código Proveedor', styleTh),
+        strCell('RFC Emisor', styleTh),
+        strCell('Razón Social Emisor', styleTh),
+        strCell('Régimen Emisor', styleTh),
+        strCell('Régimen Receptor', styleTh),
+        strCell('Uso CFDI', styleTh),
+        strCell('Método Pago', styleTh),
+        strCell('Forma Pago', styleTh),
+        strCell('Condición Crédito', styleTh),
+        strCell('Días Crédito', styleTh),
+        strCell('Fecha Emisión CFDI', styleTh),
+        strCell('Fecha Recepción XML', styleTh),
+        strCell('Fecha Límite / Programada Pago', styleTh),
+        strCell('Estatus de Plazo', styleTh),
+        strCell('Subtotal (MXN)', styleTh),
+        strCell('Impuestos Trasladados (MXN)', styleTh),
+        strCell('Total (MXN)', styleTh),
+        strCell('Estado Contable', styleTh),
+      ],
+      26
+    );
+
+    for (const f of this.facturasFiltradas) {
+      const sub = this.obtenerSubtotal(f);
+      const imp = this.obtenerImpuestos(f);
+      const tot = Number(f.total || 0);
+      const estadoEf = this.obtenerEstadoEfectivo(f);
+      const plazo = this.obtenerEstatusPlazo(f).texto;
+      const estiloEstadoTexto = obtenerEstiloSemantico(estadoEf, false, false);
+
+      pushRow(
+        [
+          strCell(f.folio || '', styleTdCenterBold),
+          strCell(f.uuid || 'N/A', styleTdUuid),
+          strCell(f.codigoProveedor || '', styleTdCenter),
+          strCell(f.rfcEmisor || '', styleTdCenter),
+          strCell(f.nombreProveedor || '', styleTdTextBold),
+          strCell(this.describirRegimen(f.regimenEmisor), styleTdText),
+          strCell(this.describirRegimen(f.regimenReceptor), styleTdText),
+          strCell(this.describirUsoCfdi(f.usoCfdi), styleTdText),
+          strCell(this.describirMetodoPago(f.metodoPago), styleTdText),
+          strCell(this.describirFormaPago(f.formaPago), styleTdText),
+          strCell(f.metodoPago === 'PPD' ? 'Crédito (PPD)' : 'Contado (PUE)', styleTdCenter),
+          intCell(f.diasCredito || 0, styleTdCenter),
+          strCell(f.fechaEmision || '', styleTdCenter),
+          strCell(f.fechaRevision || '', styleTdCenter),
+          strCell(f.fechaProgramacionPago || f.fechaEmision || '', styleTdCenterBold),
+          strCell(plazo, estiloEstadoTexto),
+          moneyCell(sub, styleTdMoney),
+          moneyCell(imp, styleTdMoney),
+          moneyCell(tot, styleTdMoneyBold),
+          strCell(estadoEf.toUpperCase(), estiloEstadoTexto),
+        ],
+        24
+      );
+    }
+
+    const totalCedulaCells: XLSXStyle.CellObject[] = [
+      strCell(`SUMAS TOTALES DE LA CÉDULA (${this.facturasFiltradas.length} COMPROBANTES):`, styleTotalLabel),
+    ];
+    for (let c = 1; c <= 15; c++) {
+      totalCedulaCells.push(strCell('', styleTotalLabel));
+    }
+    totalCedulaCells.push(
+      moneyCell(this.kpis.subTotalAcumulado, styleTotalMoney),
+      moneyCell(this.kpis.impuestosTrasladados, styleTotalMoney),
+      moneyCell(this.kpis.granTotalFacturado, styleGrandTotalMoney),
+      strCell('', styleTotalLabel)
+    );
+    const totalCedulaRowIdx = pushRow(totalCedulaCells, 26);
+    merges.push({ s: { r: totalCedulaRowIdx, c: 0 }, e: { r: totalCedulaRowIdx, c: 15 } });
+
+    // Construcción de la hoja y configuración de anchos amplios para las 20 columnas (sin recortes en móvil ni PC)
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!merges'] = merges;
+    ws['!rows'] = rows;
+    ws['!cols'] = [
+      { wch: 22 }, // Col 1: Folio / Código Proveedor / Total CFDIs
+      { wch: 42 }, // Col 2: UUID Fiscal (36 chars) / RFC Emisor / Subtotal Acumulado
+      { wch: 40 }, // Col 3: Razón Social Proveedor / Código Prov / Impuestos Trasladados
+      { wch: 36 }, // Col 4: RFC Emisor / Régimen Fiscal / Gran Total Facturado
+      { wch: 42 }, // Col 5: Razón Social Emisor / Cant. Facturas / Monto Pagado
+      { wch: 38 }, // Col 6: Régimen Emisor / Subtotal Prov / Monto Pendiente
+      { wch: 34 }, // Col 7: Régimen Receptor / Impuestos Prov / Monto Vencido
+      { wch: 34 }, // Col 8: Uso CFDI / Monto Pagado Prov
+      { wch: 36 }, // Col 9: Método Pago / Saldo Pendiente a Dispersar
+      { wch: 36 }, // Col 10: Forma Pago / Total Facturado Prov
+      { wch: 20 }, // Col 11: Condición Crédito
+      { wch: 16 }, // Col 12: Días Crédito
+      { wch: 22 }, // Col 13: Fecha Emisión CFDI
+      { wch: 22 }, // Col 14: Fecha Recepción XML
+      { wch: 30 }, // Col 15: Fecha Límite / Programada Pago
+      { wch: 28 }, // Col 16: Estatus de Plazo
+      { wch: 22 }, // Col 17: Subtotal (MXN)
+      { wch: 26 }, // Col 18: Impuestos Trasladados (MXN)
+      { wch: 22 }, // Col 19: Total (MXN)
+      { wch: 20 }, // Col 20: Estado Contable
     ];
 
-    const colgroupHtml =
-      '<colgroup>' +
-      anchosColumnasPx.map((w) => `<col width="${w}" style="width: ${w}px; mso-width-source: userset;" />`).join('') +
-      '</colgroup>';
-
-    // Filas del Concentrado por Proveedor (Sección II)
-    const filasProveedoresHtml = this.resumenProveedores
-      .map(
-        (p) => `
-        <tr height="36" style="height: 27pt; mso-height-source: userset;">
-          <td style="${styleTdCenter} font-weight: bold; mso-number-format:'\\@';">${esc(p.codigoProveedor)}</td>
-          <td style="${styleTdCenter} mso-number-format:'\\@';">${esc(p.rfc)}</td>
-          <td style="${styleTdText} font-weight: bold;">${esc(p.nombre)}</td>
-          <td style="${styleTdText}">${esc(this.describirRegimen(p.regimenFiscal))}</td>
-          <td style="${styleTdCenter} font-weight: bold;">${p.cantidadFacturas}</td>
-          <td style="${styleTdMoney}">${numVal(p.subTotal)}</td>
-          <td style="${styleTdMoney}">${numVal(p.impuestos)}</td>
-          <td style="${obtenerEstiloEstado('pagado', true)}">${numVal(p.montoPagado)}</td>
-          <td style="${p.saldoPendiente > 0 ? obtenerEstiloEstado('pendiente', true) : styleTdMoneyHighlight}">${numVal(p.saldoPendiente)}</td>
-          <td style="${styleTdMoney} font-weight: bold;">${numVal(p.total)}</td>
-        </tr>`
-      )
-      .join('');
-
-    // Filas de la Cédula Detallada (Sección III)
-    const filasFacturasHtml = this.facturasFiltradas
-      .map((f) => {
-        const sub = this.obtenerSubtotal(f);
-        const imp = this.obtenerImpuestos(f);
-        const tot = Number(f.total || 0);
-        const estadoEf = this.obtenerEstadoEfectivo(f);
-        const plazo = this.obtenerEstatusPlazo(f).texto;
-
-        return `
-        <tr height="36" style="height: 27pt; mso-height-source: userset;">
-          <td style="${styleTdCenter} font-weight: bold; mso-number-format:'\\@';">${esc(f.folio)}</td>
-          <td style="${styleTdText} font-family: Consolas, monospace; font-size: 9.5pt;">${esc(f.uuid || 'N/A')}</td>
-          <td style="${styleTdCenter} mso-number-format:'\\@';">${esc(f.codigoProveedor)}</td>
-          <td style="${styleTdCenter} mso-number-format:'\\@';">${esc(f.rfcEmisor)}</td>
-          <td style="${styleTdText} font-weight: bold;">${esc(f.nombreProveedor)}</td>
-          <td style="${styleTdText}">${esc(this.describirRegimen(f.regimenEmisor))}</td>
-          <td style="${styleTdText}">${esc(this.describirRegimen(f.regimenReceptor))}</td>
-          <td style="${styleTdText}">${esc(this.describirUsoCfdi(f.usoCfdi))}</td>
-          <td style="${styleTdText}">${esc(this.describirMetodoPago(f.metodoPago))}</td>
-          <td style="${styleTdText}">${esc(this.describirFormaPago(f.formaPago))}</td>
-          <td style="${styleTdCenter}">${esc(f.metodoPago === 'PPD' ? 'Crédito (PPD)' : 'Contado (PUE)')}</td>
-          <td style="${styleTdCenter}">${f.diasCredito || 0}</td>
-          <td style="${styleTdCenter} mso-number-format:'\\@';">${esc(f.fechaEmision || '')}</td>
-          <td style="${styleTdCenter} mso-number-format:'\\@';">${esc(f.fechaRevision || '')}</td>
-          <td style="${styleTdCenter} font-weight: bold; mso-number-format:'\\@';">${esc(f.fechaProgramacionPago || f.fechaEmision || '')}</td>
-          <td style="${obtenerEstiloEstado(estadoEf, false)}">${esc(plazo)}</td>
-          <td style="${styleTdMoney}">${numVal(sub)}</td>
-          <td style="${styleTdMoney}">${numVal(imp)}</td>
-          <td style="${styleTdMoney} font-weight: bold;">${numVal(tot)}</td>
-          <td style="${obtenerEstiloEstado(estadoEf, false)}">${esc(estadoEf.toUpperCase())}</td>
-        </tr>`;
-      })
-      .join('');
-
-    const htmlExcel = `\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-  <meta charset="UTF-8" />
-  <!--[if gte mso 9]>
-  <xml>
-    <x:ExcelWorkbook>
-      <x:ExcelWorksheets>
-        <x:ExcelWorksheet>
-          <x:Name>Cedula Contable CFDI 4.0</x:Name>
-          <x:WorksheetOptions>
-            <x:DisplayGridlines/>
-          </x:WorksheetOptions>
-        </x:ExcelWorksheet>
-      </x:ExcelWorksheets>
-    </x:ExcelWorkbook>
-  </xml>
-  <![endif]-->
-</head>
-<body>
-  <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; white-space: nowrap;">
-    ${colgroupHtml}
-
-    <!-- MEMBRETE CORPORATIVO -->
-    <tr height="42" style="height: 31.5pt; mso-height-source: userset;">
-      <td colspan="10" style="${styleMembreteTitulo}">
-        TRANSPORTES DE LOS SANTOS E HIJOS — CÉDULA CONTABLE Y DE TESORERÍA (CFDI 4.0)
-      </td>
-    </tr>
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td colspan="10" style="${styleMembreteSub}">
-        RFC Receptor: TSH7311116TL4 &nbsp;|&nbsp; Régimen Fiscal: 624 - Coordinados &nbsp;|&nbsp; Uso CFDI Autorizado: G03 - Gastos en general
-      </td>
-    </tr>
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td style="${styleMetaLabel}">Folio de Reporte:</td>
-      <td style="${styleMetaVal} font-weight: bold;">${esc(this.folioReporte)}</td>
-      <td style="${styleMetaLabel}">Fecha y Hora de Emisión:</td>
-      <td style="${styleMetaVal}">${esc(this.fechaHoraEmisionReporte.toLocaleString('es-MX'))}</td>
-      <td style="${styleMetaLabel}">Criterio de Periodo:</td>
-      <td colspan="2" style="${styleMetaVal} font-weight: bold;">${esc(this.etiquetaCriterioFecha)}</td>
-      <td style="${styleMetaLabel}">Rango Consultado:</td>
-      <td colspan="2" style="${styleMetaVal} font-weight: bold; color: #1e3a8a;">${esc(this.etiquetaRangoPeriodo)}</td>
-    </tr>
-    <tr height="18"><td colspan="10"></td></tr>
-
-    <!-- SECCIÓN I: RESUMEN FINANCIERO Y FLUJO DE EFECTIVO -->
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td colspan="7" style="${styleSectionBanner}">
-        I. RESUMEN FINANCIERO, FISCAL Y DE FLUJO DE EFECTIVO DEL PERIODO
-      </td>
-    </tr>
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <th style="${styleTh}">Total CFDIs</th>
-      <th style="${styleTh}">Subtotal Acumulado (MXN)</th>
-      <th style="${styleTh}">Impuestos Trasladados Est. (MXN)</th>
-      <th style="${styleTh}">Gran Total Facturado (MXN)</th>
-      <th style="${styleTh}">Monto Pagado / Liquidado (MXN)</th>
-      <th style="${styleTh}">Monto Pendiente en Tiempo (MXN)</th>
-      <th style="${styleTh}">Monto Vencido / Exigible (MXN)</th>
-    </tr>
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td style="${styleTdCenter} font-size: 11pt; font-weight: bold;">${this.kpis.totalCfdis}</td>
-      <td style="${styleTdMoney} font-size: 11pt; font-weight: bold;">${numVal(this.kpis.subTotalAcumulado)}</td>
-      <td style="${styleTdMoney} font-size: 11pt; font-weight: bold;">${numVal(this.kpis.impuestosTrasladados)}</td>
-      <td style="${styleGrandTotalMoney}">${numVal(this.kpis.granTotalFacturado)}</td>
-      <td style="${obtenerEstiloEstado('pagado', true)} font-size: 11pt;">${numVal(this.kpis.montoPagado)}</td>
-      <td style="${obtenerEstiloEstado('pendiente', true)} font-size: 11pt;">${numVal(this.kpis.montoPendienteEnTiempo)}</td>
-      <td style="${obtenerEstiloEstado('vencido', true)} font-size: 11pt;">${numVal(this.kpis.montoVencidoExigible)}</td>
-    </tr>
-    <tr height="18"><td colspan="10"></td></tr>
-
-    <!-- SECCIÓN II: CONCENTRADO DE PAGO Y DISPERSIÓN POR PROVEEDOR -->
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td colspan="10" style="${styleSectionBanner}">
-        II. CONCENTRADO DE PAGO Y DISPERSIÓN SEMANAL POR PROVEEDOR (${this.resumenProveedores.length} PROVEEDORES)
-      </td>
-    </tr>
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <th style="${styleTh}">Código Proveedor</th>
-      <th style="${styleTh}">RFC Emisor</th>
-      <th style="${styleTh}">Razón Social Proveedor</th>
-      <th style="${styleTh}">Régimen Fiscal Emisor</th>
-      <th style="${styleTh}">Cant. Facturas</th>
-      <th style="${styleTh}">Subtotal (MXN)</th>
-      <th style="${styleTh}">Impuestos (MXN)</th>
-      <th style="${styleTh}">Monto Pagado (MXN)</th>
-      <th style="${styleTh}">Saldo Pendiente a Dispersar (MXN)</th>
-      <th style="${styleTh}">Total Facturado (MXN)</th>
-    </tr>
-    ${filasProveedoresHtml}
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td colspan="4" style="${styleTotalLabel}">TOTALES POR PROVEEDORES:</td>
-      <td style="${styleTotalLabel} text-align: center;">${this.kpis.totalCfdis}</td>
-      <td style="${styleTotalMoney}">${numVal(this.kpis.subTotalAcumulado)}</td>
-      <td style="${styleTotalMoney}">${numVal(this.kpis.impuestosTrasladados)}</td>
-      <td style="${obtenerEstiloEstado('pagado', true)} border-top: 2px solid #0f2247; border-bottom: 2px solid #0f2247;">${numVal(this.kpis.montoPagado)}</td>
-      <td style="${obtenerEstiloEstado('pendiente', true)} border-top: 2px solid #0f2247; border-bottom: 2px solid #0f2247;">${numVal(this.kpis.montoPendienteEnTiempo + this.kpis.montoVencidoExigible)}</td>
-      <td style="${styleGrandTotalMoney}">${numVal(this.kpis.granTotalFacturado)}</td>
-    </tr>
-    <tr height="18"><td colspan="20"></td></tr>
-
-    <!-- SECCIÓN III: CÉDULA DETALLADA DE COMPROBANTES CFDI 4.0 -->
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td colspan="20" style="${styleSectionBanner}">
-        III. CÉDULA DETALLADA DE COMPROBANTES FISCALES DIGITALES CFDI 4.0 (${this.facturasFiltradas.length} REGISTROS)
-      </td>
-    </tr>
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <th style="${styleTh}">Folio</th>
-      <th style="${styleTh}">UUID Fiscal (Timbre SAT)</th>
-      <th style="${styleTh}">Código Proveedor</th>
-      <th style="${styleTh}">RFC Emisor</th>
-      <th style="${styleTh}">Razón Social Emisor</th>
-      <th style="${styleTh}">Régimen Emisor</th>
-      <th style="${styleTh}">Régimen Receptor</th>
-      <th style="${styleTh}">Uso CFDI</th>
-      <th style="${styleTh}">Método Pago</th>
-      <th style="${styleTh}">Forma Pago</th>
-      <th style="${styleTh}">Condición Crédito</th>
-      <th style="${styleTh}">Días Crédito</th>
-      <th style="${styleTh}">Fecha Emisión CFDI</th>
-      <th style="${styleTh}">Fecha Recepción XML</th>
-      <th style="${styleTh}">Fecha Límite / Programada Pago</th>
-      <th style="${styleTh}">Estatus de Plazo</th>
-      <th style="${styleTh}">Subtotal (MXN)</th>
-      <th style="${styleTh}">Impuestos Trasladados (MXN)</th>
-      <th style="${styleTh}">Total (MXN)</th>
-      <th style="${styleTh}">Estado Contable</th>
-    </tr>
-    ${filasFacturasHtml}
-    <tr height="36" style="height: 27pt; mso-height-source: userset;">
-      <td colspan="16" style="${styleTotalLabel}">
-        SUMAS TOTALES DE LA CÉDULA (${this.facturasFiltradas.length} COMPROBANTES):
-      </td>
-      <td style="${styleTotalMoney}">${numVal(this.kpis.subTotalAcumulado)}</td>
-      <td style="${styleTotalMoney}">${numVal(this.kpis.impuestosTrasladados)}</td>
-      <td style="${styleGrandTotalMoney}">${numVal(this.kpis.granTotalFacturado)}</td>
-      <td style="${styleTotalLabel}"></td>
-    </tr>
-  </table>
-</body>
-</html>`;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cedula Contable CFDI 4.0');
 
     const sufijoFecha =
       this.fechaInicio && this.fechaFin
         ? `${this.fechaInicio}_a_${this.fechaFin}`
         : new Date().toISOString().split('T')[0];
 
-    const nombreArchivo = `Cedula_Contable_XmlFlow_${sufijoFecha}.xls`;
-    const mimeType = 'application/vnd.ms-excel';
+    const nombreArchivo = `Cedula_Contable_XmlFlow_${sufijoFecha}.xlsx`;
+    const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
     // 1. Soporte nativo para APK de Android (puente JavascriptInterface en MainActivity.java)
     const androidNative = typeof window !== 'undefined' ? (window as any).AndroidNative : null;
     if (androidNative && typeof androidNative.saveBase64File === 'function') {
-      const utf8Bytes = new TextEncoder().encode(htmlExcel);
-      let binary = '';
-      for (let i = 0; i < utf8Bytes.length; i++) {
-        binary += String.fromCharCode(utf8Bytes[i]);
-      }
-      const base64Data = btoa(binary);
+      const base64Data: string = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
       androidNative.saveBase64File(base64Data, nombreArchivo, mimeType);
       return;
     }
 
-    const blob = new Blob([htmlExcel], { type: `${mimeType};charset=utf-8;` });
+    const excelBuffer: ArrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: mimeType });
 
-    // 2. Segundo método para móviles/tablets (Web Share API con archivos si no se ha recompilado el puente Java)
+    // 2. Segundo método para navegadores móviles/tablets (Web Share API con archivos)
     const esMovilOTablet =
       typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
     if (

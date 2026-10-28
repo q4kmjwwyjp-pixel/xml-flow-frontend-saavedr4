@@ -87,10 +87,10 @@ public class MainActivity extends BridgeActivity {
                     byte[] fileBytes = Base64.decode(cleanBase64, Base64.DEFAULT);
                     String safeFileName = (fileName != null && !fileName.trim().isEmpty())
                             ? fileName.trim()
-                            : "Cedula_Contable_XmlFlow.xls";
+                            : "Cedula_Contable_XmlFlow.xlsx";
                     String safeMime = (mimeType != null && !mimeType.trim().isEmpty())
                             ? mimeType.trim()
-                            : "application/vnd.ms-excel";
+                            : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
                     // 1. Guardar directamente en la carpeta pública de Descargas (Android 10+)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
