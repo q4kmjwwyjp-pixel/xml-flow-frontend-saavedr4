@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FacturaService } from '../../core/services/factura.service';
 import { FacturaResumen } from '../../core/models/factura.model';
 import { calcularVencimiento } from '../../core/utils/factura-vencimiento';
@@ -19,18 +20,30 @@ interface CheckFiscal {
 
 @Component({
   selector: 'app-detalle-factura',
-  imports: [RouterLink],
+  imports: [],
   templateUrl: './detalle-factura.html',
   styleUrl: './detalle-factura.css',
 })
 export class DetalleFactura implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private location = inject(Location);
   private facturaService = inject(FacturaService);
 
   cargando = signal(true);
   error = signal('');
   factura = signal<FacturaResumen | null>(null);
   procesandoCambioEstado = signal(false); // Para deshabilitar botones mientras carga
+
+  origenNavegacion = signal<'reportes' | 'pagos' | 'dashboard'>('pagos');
+  retornoPagos = signal<'reportes' | 'dashboard'>('dashboard');
+
+  textoBotonRegresar = computed(() => {
+    const origen = this.origenNavegacion();
+    if (origen === 'reportes') return '← Regresar a Generador de Reportes';
+    if (origen === 'dashboard') return '← Regresar al Dashboard';
+    return '← Volver a Pagos Programados';
+  });
 
   /** Estado de vencimiento calculado a partir de la fecha límite de pago. */
   vencimiento = computed(() => {
@@ -76,6 +89,22 @@ export class DetalleFactura implements OnInit {
   });
 
   ngOnInit() {
+    this.route.queryParamMap.subscribe((qParams) => {
+      const stateActual = (this.location.getState() as Record<string, any>) || {};
+      const origen = qParams.get('origen') || stateActual['origen'] || 'pagos';
+      const retorno = qParams.get('retorno') || stateActual['retorno'] || 'dashboard';
+
+      if (origen === 'reportes') {
+        this.origenNavegacion.set('reportes');
+      } else if (origen === 'dashboard') {
+        this.origenNavegacion.set('dashboard');
+      } else {
+        this.origenNavegacion.set('pagos');
+      }
+
+      this.retornoPagos.set(retorno === 'reportes' ? 'reportes' : 'dashboard');
+    });
+
     this.route.paramMap.subscribe((params) => {
       const uuid = params.get('uuid');
       if (!uuid) {
@@ -85,6 +114,28 @@ export class DetalleFactura implements OnInit {
       }
       this.cargar(uuid);
     });
+  }
+
+  regresar(): void {
+    const origen = this.origenNavegacion();
+    if (origen === 'reportes') {
+      this.router.navigateByUrl('/reportes-semanales');
+      return;
+    }
+    if (origen === 'dashboard') {
+      this.router.navigateByUrl('/dashboard');
+      return;
+    }
+
+    // Regresar a Pagos Programados conservando el origen previo (ej. si venía de Reportes Semanales)
+    if (this.retornoPagos() === 'reportes') {
+      this.router.navigate(['/pagos-programados'], {
+        queryParams: { origen: 'reportes' },
+        state: { origen: 'reportes' },
+      });
+      return;
+    }
+    this.router.navigate(['/pagos-programados']);
   }
 
   private cargar(uuid: string) {

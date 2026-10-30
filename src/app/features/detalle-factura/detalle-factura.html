@@ -1,10 +1,16 @@
-<section class="detalle-page">
-  <button routerLink="/pagos-programados" class="btn-back">← Volver a Pagos Programados</button>
+<section class="detalle-page page-transition-enter">
+  <button type="button" (click)="regresar()" class="btn-back">
+    {{ textoBotonRegresar() }}
+  </button>
 
   @if (cargando()) {
-  <div class="state-box">
-    <h2>Cargando factura...</h2>
-    <p>Conectando con el servidor, por favor espera.</p>
+  <div class="app-loader-card" role="status" aria-live="polite" style="width: 100%;">
+    <div class="app-spinner-wrapper" aria-hidden="true">
+      <div class="app-spinner-ring"></div>
+      <div class="app-spinner-dot"></div>
+    </div>
+    <h2 class="app-loader-title">Cargando auditoría de la factura...</h2>
+    <p class="app-loader-subtitle">Consultando desglose fiscal y estatus del comprobante CFDI 4.0.</p>
   </div>
   } @else if (error()) {
   <div class="state-box error">
@@ -30,6 +36,9 @@
         class="btn-action success" 
         (click)="marcarComoPagado()" 
         [disabled]="procesandoCambioEstado() || f.estado?.toLowerCase() === 'pagado'">
+        @if (procesandoCambioEstado()) {
+          <span class="btn-inline-spinner" aria-hidden="true"></span>
+        }
         💰 Marcar como Pagada
       </button>
       
@@ -37,6 +46,9 @@
         class="btn-action danger" 
         (click)="marcarComoVencido()" 
         [disabled]="procesandoCambioEstado() || f.estado?.toLowerCase() === 'vencido'">
+        @if (procesandoCambioEstado()) {
+          <span class="btn-inline-spinner" aria-hidden="true"></span>
+        }
         ⚠️ Marcar como Vencida
       </button>
     </div>

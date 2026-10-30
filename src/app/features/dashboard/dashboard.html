@@ -1,4 +1,4 @@
-<div class="dashboard-wrapper">
+<div class="dashboard-wrapper page-transition-enter">
   <!-- Encabezado -->
   <header class="dashboard-header">
     <div class="header-info">
@@ -6,24 +6,42 @@
       <p class="subtitle">
         Revisión Fiscal CFDI 4.0 | Empresa Receptora: <strong>Transportes de los santos e hijos (TSH7311116TL4)</strong>
       </p>
-      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
-        <button class="border-2 hover:bg-blue-200 hover:border-white border-blue-300 rounded-md px-4 py-2 font-semibold"
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px;">
+        <button class="border-2 hover:bg-blue-200 hover:border-white border-blue-300 bg-white rounded-md px-4 py-2 font-semibold cursor-pointer transition"
           (click)="goUploadPage()">Escanear XML 📄</button>
         <button routerLink="/reportes-semanales"
-          class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 shadow-sm">
+          class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 shadow-sm cursor-pointer transition">
           📊 Generador de Reportes Semanales
         </button>
         <button (click)="irAProveedores()"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md px-4 py-2 shadow-sm flex items-center gap-2">
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md px-4 py-2 shadow-sm flex items-center gap-2 cursor-pointer transition">
           👥 Directorio de Proveedores
         </button>
       </div>
     </div>
+
+    <div style="display: flex; align-items: center;">
+      <button
+        type="button"
+        (click)="cerrarSesion()"
+        class="bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300 font-semibold rounded-lg px-4 py-2.5 shadow-xs flex items-center gap-2 transition cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+          </path>
+        </svg>
+        Cerrar Sesión
+      </button>
+    </div>
   </header>
 
-  <div *ngIf="cargando()" style="text-align: center; padding: 3rem;">
-    <h2>Cargando comprobantes...</h2>
-    <p>Conectando con el servidor, por favor espera.</p>
+  <div *ngIf="cargando()" class="app-loader-card" role="status" aria-live="polite">
+    <div class="app-spinner-wrapper" aria-hidden="true">
+      <div class="app-spinner-ring"></div>
+      <div class="app-spinner-dot"></div>
+    </div>
+    <h2 class="app-loader-title">Cargando información operativa...</h2>
+    <p class="app-loader-subtitle">Sincronizando comprobantes CFDI 4.0 recientes con el servidor.</p>
   </div>
 
   <div *ngIf="!cargando()">
@@ -47,7 +65,8 @@
     <section class="table-section">
       <div class="table-header">
         <h2>XMLs Escaneados en las últimas 24 horas</h2>
-        <button routerLink="/pagos-programados" class="btn btn-primary bg-blue-500 hover:bg-blue-600 text-white mb-5">
+        <button [routerLink]="['/pagos-programados']" [queryParams]="{ origen: 'dashboard' }"
+          class="btn btn-primary bg-blue-500 hover:bg-blue-600 text-white mb-5">
           Ver todos los pagos pendientes 🔍
         </button>
       </div>

@@ -33,6 +33,13 @@ export class Dashboard implements OnInit {
     this.router.navigateByUrl('/upload');
   }
 
+  cerrarSesion(): void {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('xmlflow_usuario');
+    }
+    this.router.navigateByUrl('/');
+  }
+
   cargarDatos(): void {
     this.cargando.set(true);
 
@@ -98,6 +105,6 @@ export class Dashboard implements OnInit {
   }
 
   irAProveedores(): void {
-  this.router.navigateByUrl('/proveedores');
-}
+    this.router.navigateByUrl('/proveedores');
+  }
 }

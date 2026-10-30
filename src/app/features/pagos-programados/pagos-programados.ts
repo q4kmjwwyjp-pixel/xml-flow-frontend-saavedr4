@@ -1,6 +1,6 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal, computed, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FacturaService } from '../../core/services/factura.service';
 
@@ -13,6 +13,19 @@ import { FacturaService } from '../../core/services/factura.service';
 export class PagosProgramados implements OnInit {
   private facturaService = inject(FacturaService);
   private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private location = inject(Location);
+
+  cargando = signal<boolean>(true);
+  errorCarga = signal<string | null>(null);
+  origenNavegacion = signal<'reportes' | 'dashboard'>('dashboard');
+
+  textoBotonRegresar = computed(() =>
+    this.origenNavegacion() === 'reportes'
+      ? '← Regresar a Generador de Reportes'
+      : '← Regresar al Dashboard'
+  );
 
   todasLasFacturas: any[] = [];
   facturasFiltradas: any[] = [];
@@ -25,17 +38,42 @@ export class PagosProgramados implements OnInit {
   ordenSeleccionado: string = 'asc';
 
   ngOnInit() {
+    this.route.queryParamMap.subscribe((params) => {
+      const stateActual = (this.location.getState() as Record<string, any>) || {};
+      const origenParam = params.get('origen') || stateActual['origen'];
+      this.origenNavegacion.set(origenParam === 'reportes' ? 'reportes' : 'dashboard');
+    });
+
+    this.cargarFacturas();
+  }
+
+  cargarFacturas(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(null);
+
     this.facturaService.getFacturas().subscribe({
       next: (facturas) => {
-        this.todasLasFacturas = facturas;
+        this.todasLasFacturas = facturas || [];
         // Aplicamos los filtros y el orden desde el inicio
         this.aplicarFiltros();
+        this.cargando.set(false);
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al conectar con Render:', err);
-      }
+        this.errorCarga.set('No se pudieron obtener los comprobantes programados. Verifica tu conexión.');
+        this.cargando.set(false);
+        this.cdr.detectChanges();
+      },
     });
+  }
+
+  regresar(): void {
+    if (this.origenNavegacion() === 'reportes') {
+      this.router.navigateByUrl('/reportes-semanales');
+      return;
+    }
+    this.router.navigateByUrl('/dashboard');
   }
 
   // Función que restaura la lógica de filtros

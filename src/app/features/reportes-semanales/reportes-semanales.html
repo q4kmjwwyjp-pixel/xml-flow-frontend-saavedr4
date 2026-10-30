@@ -1,11 +1,15 @@
-<div class="reporte-page-wrapper">
-  <!-- BARRA SUPERIOR DE NAVEGACIÓN Y ACCIONES (OCULTA AL IMPRIMIR) -->
-  <div class="top-action-bar no-print">
+<div class="reporte-page-wrapper page-transition-enter">
+  <!-- BARRA SUPERIOR INTEGRADA DE NAVEGACIÓN Y ACCIONES (ESTÁTICA, NUNCA FLOTA AL HACER SCROLL, OCULTA AL IMPRIMIR) -->
+  <header class="top-action-bar no-print">
     <div class="nav-left">
       <a routerLink="/dashboard" class="btn btn-back">
         ← Regresar al Dashboard
       </a>
-      <a routerLink="/pagos-programados" class="btn btn-outline">
+      <a
+        [routerLink]="['/pagos-programados']"
+        [queryParams]="{ origen: 'reportes' }"
+        [state]="{ origen: 'reportes' }"
+        class="btn btn-outline">
         📅 Ir a Pagos Programados
       </a>
     </div>
@@ -17,7 +21,7 @@
         (click)="cargarFacturas()"
         [disabled]="cargando()"
         title="Actualizar datos desde el servidor">
-        🔄 Actualizar Datos
+        🔄 {{ cargando() ? 'Actualizando...' : 'Actualizar Datos' }}
       </button>
       <button
         type="button"
@@ -34,7 +38,7 @@
         🖨️ Imprimir / Guardar PDF Oficial
       </button>
     </div>
-  </div>
+  </header>
 
   <!-- PANEL DE FILTROS INTELIGENTES DE PERIODO (OCULTO AL IMPRIMIR) -->
   <section class="filter-card no-print" aria-label="Filtros del generador de reportes">
@@ -189,10 +193,13 @@
 
   <!-- ESTADO DE CARGA O ERROR -->
   @if (cargando()) {
-    <div class="loading-box no-print">
-      <div class="spinner"></div>
-      <h3>Generando cédula contable y financiera...</h3>
-      <p>Consultando comprobantes CFDI 4.0 validados en la base de datos.</p>
+    <div class="app-loader-card no-print" role="status" aria-live="polite">
+      <div class="app-spinner-wrapper" aria-hidden="true">
+        <div class="app-spinner-ring"></div>
+        <div class="app-spinner-dot"></div>
+      </div>
+      <h3 class="app-loader-title">Generando cédula contable y financiera...</h3>
+      <p class="app-loader-subtitle">Consultando comprobantes CFDI 4.0 validados en la base de datos.</p>
     </div>
   }
 
@@ -418,6 +425,8 @@
                   <th scope="row" class="mono font-bold">
                     <a
                       [routerLink]="['/pagos-programados', f.uuid]"
+                      [queryParams]="{ origen: 'reportes' }"
+                      [state]="{ origen: 'reportes' }"
                       class="folio-link"
                       title="Ver auditoría individual de la factura">
                       {{ f.folio }}
