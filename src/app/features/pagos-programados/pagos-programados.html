@@ -24,9 +24,9 @@
     <section class="filter-panel">
         <div class="filter-group">
             <div class="input-container">
-                <label for="buscar">🔍 Buscar Folio o Proveedor</label>
+                <label for="buscar">🔍 Buscar Folio, N° Proveedor o RFC</label>
                 <input id="buscar" type="text" [(ngModel)]="busquedaTexto" (input)="aplicarFiltros()"
-                    placeholder="Escribe un folio, nombre o RFC..." class="form-control" />
+                    placeholder="Escribe folio, N° de proveedor, nombre o RFC..." class="form-control" />
             </div>
 
             <div class="input-container calendar-filter">
@@ -103,7 +103,7 @@
                         <td>
                             <div class="provider-info">
                                 <span class="provider-name">{{ f.nombreProveedor }}</span>
-                                <span class="provider-rfc">RFC: {{ f.rfcEmisor }}</span>
+                                <span class="provider-rfc">N° Prov: #{{ f.codigoProveedor }} · RFC: {{ f.rfcEmisor }}</span>
                             </div>
                         </td>
                         <td>
@@ -123,7 +123,6 @@
                         <td class="cell-amount">{{ (f.total || 0).toLocaleString('es-MX', { style: 'currency', currency:
                             'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
                         <td>
-                            <!-- Reflejando el nuevo modelo DB con Emojis -->
                             <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
                                 {{
                                     f.estado === 'pendiente' ? '🟡 PENDIENTE' : 
@@ -167,8 +166,12 @@
         </div>
         <div class="modal-body">
             <div class="detail-row">
+                <span class="label">🔢 N° de Proveedor (Clave):</span>
+                <span class="val"><strong>#{{ facturaSeleccionada.codigoProveedor }}</strong></span>
+            </div>
+            <div class="detail-row">
                 <span class="label">🏢 Proveedor:</span>
-                <span class="val">{{ facturaSeleccionada.codigoProveedor }} - {{ facturaSeleccionada.nombreProveedor }}</span>
+                <span class="val">{{ facturaSeleccionada.nombreProveedor }}</span>
             </div>
             <div class="detail-row">
                 <span class="label">🆔 RFC Emisor:</span>

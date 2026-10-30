@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-slate-50 p-6 page-transition-enter">
 
   <div class="max-w-6xl mx-auto">
-    <!-- Barra superior integrada (sin flecha flotante fixed sobre tarjetas/tablas) -->
+    <!-- Barra superior integrada -->
     <div class="mb-5">
       <button
         type="button"
@@ -18,24 +18,68 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
       <div>
         <h1 class="text-3xl font-bold text-slate-900">Directorio de Proveedores</h1>
-        <p class="text-slate-500 text-sm mt-1">Gestión de altas, bajas, ediciones y consulta de datos fiscales.</p>
+        <p class="text-slate-500 text-sm mt-1">
+          Catálogo empresarial vinculado por <strong>Número de Proveedor (Clave)</strong>, RFC y Razón Social.
+        </p>
       </div>
-      <button 
-        (click)="abrirModalNuevo()"
-        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Nuevo Proveedor
-      </button>
+      <div class="flex flex-wrap items-center gap-3">
+        <label
+          class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition duration-150 flex items-center justify-center gap-2 cursor-pointer text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
+          <span>{{ importandoArchivo() ? 'Sincronizando...' : 'Actualizar desde Excel / CSV' }}</span>
+          <input
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            class="hidden"
+            (change)="onArchivoExcelSeleccionado($event)" />
+        </label>
+
+        <button 
+          (click)="abrirModalNuevo()"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition duration-150 flex items-center justify-center gap-2 cursor-pointer text-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          Nuevo Proveedor
+        </button>
+      </div>
     </div>
+
+    @if (mensajeExito()) {
+      <div class="mb-5 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-xl flex items-center justify-between">
+        <span>✅ {{ mensajeExito() }}</span>
+        <button type="button" (click)="mensajeExito.set(null)" class="text-emerald-600 hover:text-emerald-900 font-bold">✕</button>
+      </div>
+    }
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Proveedores</span>
-          <p class="text-2xl font-bold text-slate-800">{{ proveedorService.proveedores().length }}</p>
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total en Catálogo</span>
+          <p class="text-2xl font-bold text-slate-800">{{ proveedorService.proveedores().length | number }}</p>
         </div>
         <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-bold">
           👥
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Resultados Filtrados</span>
+          <p class="text-2xl font-bold text-blue-600">{{ proveedoresFiltrados().length | number }}</p>
+        </div>
+        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center font-bold">
+          🔢
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Vinculación CFDI 4.0</span>
+          <p class="text-sm font-bold text-emerald-600 mt-1">Activa por Clave y RFC</p>
+        </div>
+        <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-bold">
+          ✓
         </div>
       </div>
     </div>
@@ -43,9 +87,9 @@
     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
       <input 
         type="text" 
-        placeholder="Buscar por RFC o Razón Social..."
+        placeholder="Buscar por N° de Proveedor (Clave ej. 2266), RFC o Razón Social..."
         [ngModel]="filtroBusqueda()"
-        (ngModelChange)="filtroBusqueda.set($event)"
+        (ngModelChange)="actualizarBusqueda($event)"
         class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm" />
     </div>
 
@@ -56,14 +100,41 @@
           <div class="app-spinner-dot"></div>
         </div>
         <h2 class="app-loader-title">Cargando directorio de proveedores...</h2>
-        <p class="app-loader-subtitle">Consultando RFCs y regímenes fiscales autorizados.</p>
+        <p class="app-loader-subtitle">Consultando números de proveedor (Clave), RFCs y regímenes fiscales autorizados.</p>
       </div>
     } @else {
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <!-- Controles superiores de paginación -->
+        <div class="px-6 py-3 bg-slate-50/70 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+          <span>
+            Mostrando <strong>{{ rangoInicio() }}</strong> – <strong>{{ rangoFin() }}</strong> de <strong>{{ proveedoresFiltrados().length | number }}</strong> proveedores
+          </span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="paginaAnterior()"
+              [disabled]="paginaActual() <= 1"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 font-semibold cursor-pointer transition">
+              ← Anterior
+            </button>
+            <span class="font-semibold px-2">
+              Página {{ paginaActual() }} de {{ totalPaginas() }}
+            </span>
+            <button
+              type="button"
+              (click)="paginaSiguiente()"
+              [disabled]="paginaActual() >= totalPaginas()"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 font-semibold cursor-pointer transition">
+              Siguiente →
+            </button>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-xs tracking-wider">
+                <th class="py-3.5 px-6 font-semibold">N° Proveedor (Clave)</th>
                 <th class="py-3.5 px-6 font-semibold">RFC</th>
                 <th class="py-3.5 px-6 font-semibold">Razón Social / Nombre</th>
                 <th class="py-3.5 px-6 font-semibold">Régimen Fiscal</th>
@@ -71,11 +142,16 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-slate-700 text-sm">
-              @for (prov of proveedoresFiltrados(); track prov.rfc) {
+              @for (prov of proveedoresPaginados(); track prov.rfc) {
                 <tr class="hover:bg-slate-50/50 transition">
+                  <td class="py-4 px-6">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold font-mono bg-blue-50 text-blue-700 border border-blue-200">
+                      #{{ prov.codigoProveedor || 'S/N' }}
+                    </span>
+                  </td>
                   <td class="py-4 px-6 font-mono font-medium text-slate-900">{{ prov.rfc }}</td>
                   <td class="py-4 px-6 font-semibold">{{ prov.nombre }}</td>
-                  <td class="py-4 px-6">{{ prov.regimenFiscal || 'N/A' }}</td>
+                  <td class="py-4 px-6">{{ prov.regimenFiscal || '601' }}</td>
                   <td class="py-4 px-6 text-center">
                     <div class="flex items-center justify-center gap-2">
                       <!-- Botón Editar -->
@@ -100,13 +176,34 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="4" class="py-10 text-center text-slate-400">
-                    No se encontraron proveedores registrados.
+                  <td colspan="5" class="py-10 text-center text-slate-400">
+                    No se encontraron proveedores que coincidan con la búsqueda.
                   </td>
                 </tr>
               }
             </tbody>
           </table>
+        </div>
+
+        <!-- Controles inferiores de paginación -->
+        <div class="px-6 py-3 bg-slate-50/70 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+          <span>Página {{ paginaActual() }} de {{ totalPaginas() }}</span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="paginaAnterior()"
+              [disabled]="paginaActual() <= 1"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 font-semibold cursor-pointer transition">
+              ← Anterior
+            </button>
+            <button
+              type="button"
+              (click)="paginaSiguiente()"
+              [disabled]="paginaActual() >= totalPaginas()"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 font-semibold cursor-pointer transition">
+              Siguiente →
+            </button>
+          </div>
         </div>
       </div>
     }
@@ -130,12 +227,23 @@
 
         <form (ngSubmit)="guardarProveedor()" class="space-y-4">
           <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">N° de Proveedor (Clave)</label>
+            <input 
+              type="text" 
+              [(ngModel)]="proveedorForm.codigoProveedor" 
+              name="codigoProveedor" 
+              placeholder="ej. 2266" 
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
+          </div>
+
+          <div>
             <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">RFC *</label>
             <input 
               type="text" 
-              [(ngModel)]="proveedorForm.rfc" 
+              [ngModel]="proveedorForm.rfc"
+              (ngModelChange)="onRfcInputChange($event)"
               name="rfc" 
-              placeholder="ej. ABC123456T10"
+              placeholder="ej. APM8805092U9"
               maxlength="13"
               [disabled]="modoEdicion()"
               required 
@@ -190,8 +298,10 @@
         </p>
 
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-6 text-left">
-          <p class="text-xs text-slate-400 font-semibold uppercase">RFC</p>
-          <p class="text-sm font-mono font-bold text-slate-700">{{ proveedorAEliminar()?.rfc }}</p>
+          <p class="text-xs text-slate-400 font-semibold uppercase">N° Proveedor / RFC</p>
+          <p class="text-sm font-mono font-bold text-slate-700">
+            #{{ proveedorAEliminar()?.codigoProveedor || 'S/N' }} · {{ proveedorAEliminar()?.rfc }}
+          </p>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-2">

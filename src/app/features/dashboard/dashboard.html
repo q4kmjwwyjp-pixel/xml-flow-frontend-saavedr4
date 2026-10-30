@@ -91,7 +91,7 @@
               <td>
                 <div class="provider-info">
                   <span class="provider-name">{{ f.nombreProveedor }}</span>
-                  <span class="provider-rfc">RFC Emisor: {{ f.rfcEmisor }}</span>
+                  <span class="provider-rfc">N° Prov: #{{ f.codigoProveedor }} · RFC: {{ f.rfcEmisor }}</span>
                 </div>
               </td>
               <td>
@@ -143,8 +143,12 @@
         </div>
         <div class="modal-body">
           <div class="detail-row">
+            <span class="label">N° de Proveedor (Clave):</span>
+            <span class="val"><strong>#{{ facturaSeleccionada.codigoProveedor }}</strong></span>
+          </div>
+          <div class="detail-row">
             <span class="label">Proveedor:</span>
-            <span class="val">{{ facturaSeleccionada.codigoProveedor }} - {{ facturaSeleccionada.nombreProveedor }}</span>
+            <span class="val">{{ facturaSeleccionada.nombreProveedor }}</span>
           </div>
           <div class="detail-row">
             <span class="label">RFC Emisor:</span>
@@ -176,7 +180,7 @@
             <span class="val highlight">{{ facturaSeleccionada.total | currency:'MXN':'symbol':'1.2-2' }}</span>
           </div>
           
-          <!-- Checklist de Comprobaciones Fiscales (Simplificado para brevedad, se mantiene igual) -->
+          <!-- Checklist de Comprobaciones Fiscales -->
           <h4 class="section-subtitle">Comprobaciones Fiscales del CFDI:</h4>
           <div class="checks-list">
             <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales?.regimenValido">

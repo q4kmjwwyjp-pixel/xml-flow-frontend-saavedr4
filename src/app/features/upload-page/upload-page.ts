@@ -5,6 +5,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CfdiValidationService } from '../../core/services/cfdi-validation.service';
 import { CfdiValidationResult } from '../../core/models/cfdi-validation.model';
 import { LogoXmlFlowComponent } from '../../shared/components/logo-xml-flow/logo-xml-flow.component';
+import {
+  obtenerDatosCatalogoPorRfc,
+  resolverCodigoProveedor,
+} from '../../core/utils/catalogo-proveedores';
 
 @Component({
   selector: 'app-upload-page',
@@ -15,10 +19,10 @@ import { LogoXmlFlowComponent } from '../../shared/components/logo-xml-flow/logo
 export class UploadPage {
   private readonly http = inject(HttpClient);
   private readonly cfdiService = inject(CfdiValidationService);
-  private readonly router = inject(Router)
+  private readonly router = inject(Router);
 
   regresar() {
-    this.router.navigateByUrl('/dashboard'); // Navega a la pantalla anterior
+    this.router.navigateByUrl('/dashboard');
   }
 
   archivoSeleccionado = signal<File | null>(null);
@@ -72,6 +76,46 @@ export class UploadPage {
     this.mensajeError.set(null);
   }
 
+  private extraerDatosXmlLocal(xml: string) {
+    const getAttr = (tagPattern: string, attr: string): string => {
+      const tagMatch = xml.match(new RegExp(`<${tagPattern}[^>]*>`, 'i'));
+      if (!tagMatch) return '';
+      const attrMatch = tagMatch[0].match(
+        new RegExp(`${attr}\\s*=\\s*["']([^"']*)["']`, 'i')
+      );
+      return attrMatch ? attrMatch[1].trim() : '';
+    };
+
+    const rfc = getAttr('cfdi:Emisor', 'Rfc').toUpperCase();
+    const delCatalogo = obtenerDatosCatalogoPorRfc(rfc);
+    const nombre =
+      getAttr('cfdi:Emisor', 'Nombre') ||
+      delCatalogo?.nombre ||
+      'Desconocido';
+    const regimenFiscal =
+      getAttr('cfdi:Emisor', 'RegimenFiscal') ||
+      delCatalogo?.regimenFiscal ||
+      '';
+
+    return {
+      uuid: getAttr('tfd:TimbreFiscalDigital', 'UUID') || 'N/A',
+      serie: getAttr('cfdi:Comprobante', 'Serie'),
+      folio: getAttr('cfdi:Comprobante', 'Folio'),
+      fechaEmision: getAttr('cfdi:Comprobante', 'Fecha'),
+      subTotal: Number(getAttr('cfdi:Comprobante', 'SubTotal') || 0),
+      total: Number(getAttr('cfdi:Comprobante', 'Total') || 0),
+      metodoPago: getAttr('cfdi:Comprobante', 'MetodoPago'),
+      formaPago: getAttr('cfdi:Comprobante', 'FormaPago'),
+      condicionesPago: getAttr('cfdi:Comprobante', 'CondicionesDePago'),
+      usoCfdi: getAttr('cfdi:Receptor', 'UsoCFDI'),
+      regimenReceptor: getAttr('cfdi:Receptor', 'RegimenFiscalReceptor'),
+      rfc: rfc || 'N/A',
+      nombre,
+      regimenFiscal,
+      codigoProveedor: resolverCodigoProveedor(rfc, null),
+    };
+  }
+
   async enviarArchivo(): Promise<void> {
     const file = this.archivoSeleccionado();
     if (!file) {
@@ -84,70 +128,97 @@ export class UploadPage {
 
     try {
       const xmlContenido = await file.text();
+      const infoLocal = this.extraerDatosXmlLocal(xmlContenido);
 
       const headers = new HttpHeaders({
         'Content-Type': 'application/xml',
       });
 
-      // Definimos la estructura de lo que responde tu backend
       interface BackendResponse {
         message: string;
         factura: CfdiValidationResult;
       }
 
-      this.http.post<BackendResponse>(this.apiUrl, xmlContenido, { headers }).subscribe({
-        next: (response) => {
-          this.cargando.set(false);
-          console.log(response.factura);
-          const datosFactura = response.factura;
-          this.cfdiService.resultadoActual.set(datosFactura);
+      this.http
+        .post<BackendResponse>(this.apiUrl, xmlContenido, { headers })
+        .subscribe({
+          next: (response) => {
+            this.cargando.set(false);
+            const datosFactura = response.factura;
+            const rfcProv =
+              datosFactura.proveedor?.rfc || infoLocal.rfc || 'N/A';
+            const delCatalogo = obtenerDatosCatalogoPorRfc(rfcProv);
 
-          if (datosFactura.estadoValidacion === 'Validada' || datosFactura.estadoValidacion === 'Aprobada') {
-            this.router.navigateByUrl('/validacion-exitosa');
-          } else {
+            datosFactura.proveedor = {
+              ...datosFactura.proveedor,
+              rfc: rfcProv,
+              nombre:
+                datosFactura.proveedor?.nombre ||
+                delCatalogo?.nombre ||
+                infoLocal.nombre,
+              regimenFiscal:
+                datosFactura.proveedor?.regimenFiscal ||
+                delCatalogo?.regimenFiscal ||
+                infoLocal.regimenFiscal,
+              codigoProveedor: resolverCodigoProveedor(
+                rfcProv,
+                datosFactura.proveedor?.codigoProveedor
+              ),
+            };
+
+            this.cfdiService.resultadoActual.set(datosFactura);
+
+            if (
+              datosFactura.estadoValidacion === 'Validada' ||
+              datosFactura.estadoValidacion === 'Aprobada'
+            ) {
+              this.router.navigateByUrl('/validacion-exitosa');
+            } else {
+              this.router.navigateByUrl('/alerta-rechazo');
+            }
+          },
+          error: (err) => {
+            this.cargando.set(false);
+
+            const mensajeBackend =
+              typeof err?.error === 'string'
+                ? err.error
+                : err?.error?.message || err?.error?.error;
+
+            this.cfdiService.resultadoActual.set({
+              uuid: infoLocal.uuid,
+              serie: infoLocal.serie,
+              folio: infoLocal.folio,
+              fechaEmision: infoLocal.fechaEmision,
+              subTotal: infoLocal.subTotal,
+              total: infoLocal.total,
+              metodoPago: infoLocal.metodoPago,
+              formaPago: infoLocal.formaPago,
+              usoCfdi: infoLocal.usoCfdi,
+              regimenReceptor: infoLocal.regimenReceptor,
+              condicionesPago: infoLocal.condicionesPago,
+              diasCredito: 0,
+              estadoValidacion: 'Rechazada',
+              motivoRechazo:
+                mensajeBackend ||
+                'Error de conexión: No se pudo contactar al servidor.',
+              proveedor: {
+                codigoProveedor: infoLocal.codigoProveedor,
+                rfc: infoLocal.rfc,
+                nombre: infoLocal.nombre,
+                regimenFiscal: infoLocal.regimenFiscal,
+              },
+              erroresDetalle: [],
+            });
+
             this.router.navigateByUrl('/alerta-rechazo');
-          }
-        },
-        error: (err) => {
-          this.cargando.set(false);
-
-          // Extraemos el mensaje que envía tu backend (puede venir directo en err.error si es texto, o en err.error.message si es un objeto JSON)
-          const mensajeBackend = typeof err?.error === 'string' 
-            ? err.error 
-            : (err?.error?.message || err?.error?.error);
-
-          // Creamos una estructura de rechazo simulada para la pantalla de alerta
-          this.cfdiService.resultadoActual.set({
-            uuid: 'N/A',
-            serie: '',
-            folio: '',
-            fechaEmision: '',
-            subTotal: 0,
-            total: 0,
-            metodoPago: '',
-            formaPago: '',
-            usoCfdi: '',
-            regimenReceptor: '',
-            condicionesPago: '',
-            diasCredito: 0,
-            estadoValidacion: 'Rechazada',
-            // Si el backend mandó mensaje lo usamos; si no (ej. caída de red), usamos un error genérico del navegador
-            motivoRechazo: mensajeBackend || 'Error de conexión: No se pudo contactar al servidor.',
-            proveedor: {
-              rfc: 'N/A',
-              nombre: 'Desconocido',
-              regimenFiscal: '',
-            },
-            erroresDetalle: [],
-          });
-
-          // Redirigimos a la pantalla de alerta de rechazo
-          this.router.navigateByUrl('/alerta-rechazo');
-        }
-      });
+          },
+        });
     } catch (e) {
       this.cargando.set(false);
-      this.mensajeError.set('No se pudo leer el contenido del archivo seleccionado.');
+      this.mensajeError.set(
+        'No se pudo leer el contenido del archivo seleccionado.'
+      );
     }
   }
 }

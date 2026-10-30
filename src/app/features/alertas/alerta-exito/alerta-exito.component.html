@@ -9,11 +9,27 @@
 
     <h1 class="alert-card__title">Comprobante validado correctamente</h1>
     <p class="alert-card__subtitle" *ngIf="resultado() as r">
-      Folio <strong>{{ r.serie ? r.serie + '-' : '' }}{{ r.folio || r.uuid }}</strong> — {{ r.proveedor.nombre }}
+      Folio <strong>{{ r.serie ? r.serie + '-' : '' }}{{ r.folio || r.uuid }}</strong> —
+      <span *ngIf="r.proveedor?.codigoProveedor && r.proveedor?.codigoProveedor !== 'S/N'">
+        <strong>Proveedor #{{ r.proveedor.codigoProveedor }}</strong> ·
+      </span>
+      {{ r.proveedor.nombre }}
     </p>
 
     <div class="alert-card__summary" *ngIf="resultado() as r">
+      <div>
+        <span>N° de proveedor (Clave)</span>
+        <strong>#{{ r.proveedor?.codigoProveedor || 'S/N' }}</strong>
+      </div>
+      <div>
+        <span>Razón social proveedor</span>
+        <strong>{{ r.proveedor?.nombre }}</strong>
+      </div>
       <div><span>RFC proveedor</span><strong>{{ r.proveedor?.rfc }}</strong></div>
+      <div *ngIf="r.proveedor?.regimenFiscal">
+        <span>Régimen fiscal proveedor</span>
+        <strong>{{ r.proveedor?.regimenFiscal }}</strong>
+      </div>
       <div><span>Régimen del receptor</span><strong>{{ r.regimenReceptor }}</strong></div>
       <div><span>Uso de CFDI</span><strong>{{ r.usoCfdi }}</strong></div>
       <div><span>Método / forma de pago</span><strong>{{ r.metodoPago }}{{ r.formaPago ? ' · ' + r.formaPago : '' }}</strong></div>

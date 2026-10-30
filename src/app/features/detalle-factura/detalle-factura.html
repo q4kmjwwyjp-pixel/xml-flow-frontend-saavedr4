@@ -23,12 +23,12 @@
   <header class="detalle-header">
     <div>
       <h1>Factura {{ f.folio }}</h1>
-      <p class="subtitle">{{ f.nombreProveedor }} · RFC {{ f.rfcEmisor }}</p>
+      <p class="subtitle">Proveedor #{{ f.codigoProveedor }} · {{ f.nombreProveedor }} · RFC {{ f.rfcEmisor }}</p>
     </div>
     <span [class]="'status-badge ' + estadoVisual().clase">{{ estadoVisual().texto }}</span>
   </header>
 
-  <!-- NUEVO: Panel de Acciones Manuales de Estado -->
+  <!-- Panel de Acciones Manuales de Estado -->
   <div class="actions-panel">
     <span class="actions-label">Actualizar estado manualmente:</span>
     <div class="buttons-group">
@@ -75,7 +75,8 @@
     <dl class="info-grid">
       <div class="info-item"><dt>Folio</dt><dd>{{ f.folio }}</dd></div>
       <div class="info-item"><dt>UUID (folio fiscal)</dt><dd class="mono">{{ f.uuid || '—' }}</dd></div>
-      <div class="info-item"><dt>Proveedor</dt><dd>{{ f.codigoProveedor }} - {{ f.nombreProveedor }}</dd></div>
+      <div class="info-item"><dt>N° de Proveedor (Clave)</dt><dd class="mono"><strong>#{{ f.codigoProveedor }}</strong></dd></div>
+      <div class="info-item"><dt>Razón Social del Proveedor</dt><dd>{{ f.nombreProveedor }}</dd></div>
       <div class="info-item"><dt>RFC emisor</dt><dd>{{ f.rfcEmisor }}</dd></div>
       <div class="info-item"><dt>Fecha de emisión</dt><dd>{{ f.fechaEmision || '—' }}</dd></div>
       <div class="info-item"><dt>Fecha de recepción del XML</dt><dd>{{ f.fechaRevision || '—' }}</dd></div>
