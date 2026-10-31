@@ -652,7 +652,7 @@ export class ReportesSemanales implements OnInit {
         ? `${this.fechaInicio}_a_${this.fechaFin}`
         : new Date().toISOString().split('T')[0];
 
-    const nombreArchivo = `Reporte_Contrarrecibos_XmlFlow_${sufijoFecha}.xlsx`;
+    const nombreArchivo = `Reporte_Contrarrecibos_Vexel_${sufijoFecha}.xlsx`;
     const mimeType =
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 

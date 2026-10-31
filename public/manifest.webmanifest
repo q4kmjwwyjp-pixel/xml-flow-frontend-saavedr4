@@ -1,22 +1,22 @@
 {
-  "name": "XML FLOW - Gestión de Facturas y Pagos",
-  "short_name": "XML FLOW",
-  "description": "Sistema de gestión de facturas XML CFDI, proveedores, contrarrecibos y programación de pagos.",
+  "name": "Vexel - Gestión de Facturas y Pagos",
+  "short_name": "Vexel",
+  "description": "Plataforma Vexel para gestión de facturas XML CFDI, proveedores, contrarrecibos y programación de pagos.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f8fafc",
-  "theme_color": "#0284c7",
+  "theme_color": "#1e3a8a",
   "orientation": "any",
   "icons": [
     {
-      "src": "icons/icon-192x192.png",
+      "src": "icons/icon-192x192.png?v=2",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/icon-512x512.png",
+      "src": "icons/icon-512x512.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
