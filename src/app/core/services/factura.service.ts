@@ -142,6 +142,12 @@ export class FacturaService {
     );
   }
 
+  eliminarFactura(uuid: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/xml/delete`, {
+      body: { uuid },
+    });
+  }
+
   // 3. Función de mapeo
   private mapearFacturaFront(f: any): FacturaResumen {
     const rfcEmisor = f.proveedor?.rfc || 'Sin RFC';
@@ -150,12 +156,23 @@ export class FacturaService {
       rfcEmisor,
       f.proveedor?.codigoProveedor
     );
-    const codigoFinal =
-      claveReal !== 'S/N' ? claveReal : `PRV-${f.proveedor?.id || '000'}`;
+    const estaRegistrado = claveReal !== 'S/N';
+    const codigoFinal = estaRegistrado
+      ? claveReal
+      : `PRV-${f.proveedor?.id || '000'}`;
 
     const monedaNormalizada = String(f.moneda || 'MXN')
       .trim()
       .toUpperCase();
+
+    const diasCreditoCalculados =
+      f.metodoPago === 'PPD'
+        ? estaRegistrado
+          ? f.diasCredito && f.diasCredito > 0
+            ? Number(f.diasCredito)
+            : 30
+          : 0
+        : 0;
 
     return {
       uuid: f.uuid,
@@ -172,7 +189,7 @@ export class FacturaService {
       rfcEmisor,
       metodoPago: f.metodoPago,
       formaPago: f.formaPago,
-      diasCredito: f.diasCredito || 0,
+      diasCredito: diasCreditoCalculados,
       fechaProgramacionPago: f.fechaEstimadaPago
         ? f.fechaEstimadaPago.split('T')[0]
         : '',

@@ -153,4 +153,28 @@ export class PagosProgramados implements OnInit {
   cerrarDetalle() {
     this.facturaSeleccionada = null;
   }
+
+  eliminarXml(factura: any): void {
+    if (!this.authService.esAdmin() || !factura?.uuid) return;
+    if (
+      !confirm(
+        `¿Estás seguro de ELIMINAR permanentemente el XML ${factura.folio} (${factura.nombreProveedor})?`
+      )
+    ) {
+      return;
+    }
+
+    this.facturaService.eliminarFactura(factura.uuid).subscribe({
+      next: () => {
+        this.todasLasFacturas = this.todasLasFacturas.filter(
+          (f) => f.uuid !== factura.uuid
+        );
+        this.aplicarFiltros();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        alert('No se pudo eliminar el archivo XML. Intenta nuevamente.');
+      },
+    });
+  }
 }

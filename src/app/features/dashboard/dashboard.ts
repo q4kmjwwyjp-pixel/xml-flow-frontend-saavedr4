@@ -127,4 +127,27 @@ export class Dashboard implements OnInit {
   irAProveedores(): void {
     this.router.navigateByUrl('/proveedores');
   }
+
+  eliminarXml(factura: FacturaResumen): void {
+    if (!this.authService.esAdmin() || !factura?.uuid) return;
+    if (
+      !confirm(
+        `¿Estás seguro de ELIMINAR permanentemente el XML ${factura.folio} (${factura.nombreProveedor})?`
+      )
+    ) {
+      return;
+    }
+
+    this.facturaService.eliminarFactura(factura.uuid).subscribe({
+      next: () => {
+        this.todasLasFacturasRaw = this.todasLasFacturasRaw.filter(
+          (f) => f.uuid !== factura.uuid
+        );
+        this.recalcularVistaSegunRol();
+      },
+      error: () => {
+        alert('No se pudo eliminar el archivo XML. Intenta nuevamente.');
+      },
+    });
+  }
 }

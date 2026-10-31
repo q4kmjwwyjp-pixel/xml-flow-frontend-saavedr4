@@ -22,8 +22,6 @@ export class AlertaExitoComponent implements OnInit {
 
   folioContrarreciboInput = signal<string>('');
   fechaPagoInput = signal<string>('');
-  diasCreditoInput = signal<number | null>(null);
-  baseCalculo = signal<'revision' | 'emision'>('revision');
   guardandoFecha = signal<boolean>(false);
   mensajeGuardado = signal<string | null>(null);
   errorGuardado = signal<string | null>(null);
@@ -36,9 +34,6 @@ export class AlertaExitoComponent implements OnInit {
         ? String(r.fechaEstimadaPago).split('T')[0]
         : '';
       this.fechaPagoInput.set(fechaInicial);
-      this.diasCreditoInput.set(
-        r.diasCredito && r.diasCredito > 0 ? r.diasCredito : null
-      );
       this.folioContrarreciboInput.set((r as any).folioContrarrecibo || '');
     }
   }
@@ -47,6 +42,23 @@ export class AlertaExitoComponent implements OnInit {
     const r = this.resultado();
     const cod = (r?.proveedor?.codigoProveedor || '').trim();
     return !cod || cod === 'S/N' || cod.startsWith('PRV-');
+  }
+
+  /** Días de crédito fijos por proveedor (30 días si está registrado y es PPD; 0 si no está registrado o es PUE) */
+  diasFijosProveedor(): number {
+    const r = this.resultado();
+    if (!r || r.metodoPago !== 'PPD') return 0;
+    if (this.esProveedorSinRegistro()) return 0;
+    return r.diasCredito && r.diasCredito > 0 ? r.diasCredito : 30;
+  }
+
+  /** Verifica si el archivo XML omite los días de crédito en el nodo <cfdi:Comprobante CondicionesDePago="..."> */
+  faltaDiasCreditoEnXml(): boolean {
+    const r = this.resultado();
+    if (!r) return false;
+    const cond = (r.condicionesPago || '').trim();
+    if (!cond) return true;
+    return !/\b(\d+)\s*d[ií]as?\b/i.test(cond);
   }
 
   onFolioContrarreciboChange(valor: string): void {
@@ -63,56 +75,6 @@ export class AlertaExitoComponent implements OnInit {
     this.cambiosSinGuardar.set(true);
   }
 
-  onDiasCreditoChange(valor: number | string | null): void {
-    const dias =
-      valor !== null && valor !== '' && !Number.isNaN(Number(valor))
-        ? Math.max(0, Math.round(Number(valor)))
-        : null;
-    this.diasCreditoInput.set(dias);
-    this.mensajeGuardado.set(null);
-    this.errorGuardado.set(null);
-    this.cambiosSinGuardar.set(true);
-
-    if (dias !== null) {
-      const base = this.obtenerFechaBase();
-      base.setDate(base.getDate() + dias);
-      this.fechaPagoInput.set(this.formatearFechaISO(base));
-    }
-  }
-
-  cambiarBaseCalculo(nuevaBase: 'revision' | 'emision'): void {
-    this.baseCalculo.set(nuevaBase);
-    const dias = this.diasCreditoInput();
-    if (dias !== null) {
-      this.onDiasCreditoChange(dias);
-    }
-  }
-
-  aplicarPlazoRapido(dias: number): void {
-    this.onDiasCreditoChange(dias);
-  }
-
-  private obtenerFechaBase(): Date {
-    const r = this.resultado();
-    if (this.baseCalculo() === 'emision' && r?.fechaEmision) {
-      const f = String(r.fechaEmision).split('T')[0];
-      const parsed = new Date(`${f}T12:00:00`);
-      if (!Number.isNaN(parsed.getTime())) {
-        return parsed;
-      }
-    }
-    const hoy = new Date();
-    hoy.setHours(12, 0, 0, 0);
-    return hoy;
-  }
-
-  private formatearFechaISO(fecha: Date): string {
-    const y = fecha.getFullYear();
-    const m = String(fecha.getMonth() + 1).padStart(2, '0');
-    const d = String(fecha.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
   guardarProgramacionPago(navegarDespuesA?: string): void {
     const r = this.resultado();
     if (!r || !r.uuid || r.uuid === 'N/A') {
@@ -125,7 +87,7 @@ export class AlertaExitoComponent implements OnInit {
     this.errorGuardado.set(null);
 
     const fecha = (this.fechaPagoInput() || '').trim() || null;
-    const dias = this.diasCreditoInput();
+    const diasFijos = this.diasFijosProveedor();
     const folioCR = (this.folioContrarreciboInput() || '').trim() || null;
 
     const payload: {
@@ -134,7 +96,7 @@ export class AlertaExitoComponent implements OnInit {
       folioContrarrecibo?: string | null;
     } = {
       fechaEstimadaPago: fecha,
-      diasCredito: dias,
+      diasCredito: diasFijos,
     };
     if (folioCR !== null) {
       payload.folioContrarrecibo = folioCR;
@@ -147,9 +109,9 @@ export class AlertaExitoComponent implements OnInit {
         this.cfdiService.resultadoActual.set({
           ...r,
           fechaEstimadaPago: fecha,
-          diasCredito: dias ?? 0,
+          diasCredito: diasFijos,
         });
-        this.mensajeGuardado.set('✅ Datos de contrarrecibo y fecha de pago guardados.');
+        this.mensajeGuardado.set('✅ Fecha de pago guardada correctamente.');
         if (navegarDespuesA) {
           this.router.navigateByUrl(navegarDespuesA);
         }
@@ -157,7 +119,7 @@ export class AlertaExitoComponent implements OnInit {
       error: () => {
         this.guardandoFecha.set(false);
         this.errorGuardado.set(
-          'No se pudo actualizar en el servidor. Intenta de nuevo.'
+          'No se pudo actualizar la fecha en el servidor. Intenta de nuevo.'
         );
         if (navegarDespuesA) {
           this.router.navigateByUrl(navegarDespuesA);

@@ -86,6 +86,16 @@
           }
           ⚠️ Marcar como Vencida
         </button>
+
+        @if (authService.esAdmin()) {
+          <button
+            type="button"
+            (click)="eliminarFacturaActual()"
+            [disabled]="eliminandoFactura()"
+            class="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition cursor-pointer">
+            {{ eliminandoFactura() ? 'Eliminando...' : '🗑️ Eliminar XML (Admin)' }}
+          </button>
+        }
       </div>
     </div>
 
@@ -154,47 +164,31 @@
       }
     </div>
 
-    <!-- 3. Modificar Fecha Estimada / Programada de Pago y Días de Crédito -->
+    <!-- 3. Modificar ÚNICAMENTE Fecha Programada de Pago (Días de Crédito se quedan fijos al proveedor) -->
     <div class="pt-4 border-t border-slate-100">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
         <label
           for="inputFechaProgramadaPago"
           class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-          <span>📅 Fecha Programada de Pago y Días de Crédito</span>
+          <span>📅 Modificar Fecha Programada de Pago</span>
         </label>
-        <span class="text-xs text-slate-500">
-          Ajustable según la fecha en que se recibió la factura a revisión
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+          🔒 Plazo fijo del proveedor: {{ esCredito() ? (f.diasCredito || 30) + ' días' : 'Contado (0 días)' }}
         </span>
       </div>
 
-      <form (ngSubmit)="guardarFechaProgramadaPago()" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">
-            Días de crédito
-          </label>
-          <input
-            type="number"
-            min="0"
-            max="365"
-            name="diasCredito"
-            placeholder="0 (Sin crédito por default)"
-            [ngModel]="diasCreditoInput()"
-            (ngModelChange)="onDiasCreditoDetalleChange($event)"
-            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-        </div>
+      <p class="text-xs text-slate-500 mb-3">
+        Los días de crédito permanecen fijos según el proveedor. Aquí puedes cambiar únicamente la fecha de pago según el día en que se envió la factura a revisión.
+      </p>
 
-        <div>
-          <label for="inputFechaProgramadaPago" class="block text-xs font-semibold text-slate-600 mb-1">
-            Fecha estimada de pago
-          </label>
-          <input
-            id="inputFechaProgramadaPago"
-            type="date"
-            name="fechaProgramadaPago"
-            [ngModel]="fechaProgramadaInput()"
-            (ngModelChange)="fechaProgramadaInput.set($event)"
-            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-        </div>
+      <form (ngSubmit)="guardarFechaProgramadaPago()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <input
+          id="inputFechaProgramadaPago"
+          type="date"
+          name="fechaProgramadaPago"
+          [ngModel]="fechaProgramadaInput()"
+          (ngModelChange)="fechaProgramadaInput.set($event)"
+          class="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
 
         <button
           type="submit"
@@ -289,10 +283,15 @@
       <div class="info-item"><dt>Método de pago</dt><dd>{{ metodo(f.metodoPago) }}</dd></div>
       <div class="info-item"><dt>Forma de pago</dt><dd>{{ forma(f.formaPago) }}</dd></div>
       <div class="info-item">
-        <dt>Plazo de crédito</dt>
-        <dd>{{ esCredito() ? (f.diasCredito || 0) + ' días naturales' : 'Sin crédito (0 días)' }}</dd>
+        <dt>Plazo de crédito (Fijo por proveedor)</dt>
+        <dd class="font-bold">{{ esCredito() ? (f.diasCredito || 30) + ' días naturales (Fijo)' : 'Sin crédito (0 días)' }}</dd>
       </div>
-      <div class="info-item"><dt>Condiciones indicadas en el XML</dt><dd>{{ f.condicionesPago || '—' }}</dd></div>
+      <div class="info-item">
+        <dt>Días de crédito en XML (&lt;cfdi:Comprobante CondicionesDePago&gt;)</dt>
+        <dd [ngClass]="!f.condicionesPago ? 'text-amber-700 font-semibold' : ''">
+          {{ f.condicionesPago || '⚠️ No hay días de crédito en XML (Falta atributo CondicionesDePago en <cfdi:Comprobante>)' }}
+        </dd>
+      </div>
       <div class="info-item">
         <dt>Fecha límite de pago</dt>
         <dd [class.text-danger]="vencimiento()?.vencida">{{ f.fechaProgramacionPago || '—' }}</dd>

@@ -181,14 +181,25 @@
                             </span>
                         </td>
                         <td>
-                            <a
-                                [routerLink]="['/pagos-programados', f.uuid]"
-                                [queryParams]="{ origen: 'pagos', retorno: origenNavegacion() }"
-                                [state]="{ origen: 'pagos', retorno: origenNavegacion() }"
-                                class="btn-detail"
-                                style="display: inline-block; text-decoration: none;">
-                                Ver detalle
-                            </a>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <a
+                                    [routerLink]="['/pagos-programados', f.uuid]"
+                                    [queryParams]="{ origen: 'pagos', retorno: origenNavegacion() }"
+                                    [state]="{ origen: 'pagos', retorno: origenNavegacion() }"
+                                    class="btn-detail"
+                                    style="display: inline-block; text-decoration: none;">
+                                    Ver detalle
+                                </a>
+                                @if (authService.esAdmin()) {
+                                    <button
+                                        type="button"
+                                        (click)="eliminarXml(f)"
+                                        title="Eliminar factura XML (Solo Admin)"
+                                        class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 text-xs font-bold transition cursor-pointer">
+                                        🗑️
+                                    </button>
+                                }
+                            </div>
                         </td>
                     </tr>
                     }

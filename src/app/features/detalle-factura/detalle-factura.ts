@@ -3,6 +3,7 @@ import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FacturaService } from '../../core/services/factura.service';
+import { AuthService } from '../../core/services/auth.service';
 import { FacturaResumen } from '../../core/models/factura.model';
 import { calcularVencimiento } from '../../core/utils/factura-vencimiento';
 import {
@@ -31,12 +32,14 @@ export class DetalleFactura implements OnInit {
   private router = inject(Router);
   private location = inject(Location);
   private facturaService = inject(FacturaService);
+  public authService = inject(AuthService);
 
   cargando = signal(true);
   error = signal('');
   factura = signal<FacturaResumen | null>(null);
   todasLasFacturas = signal<FacturaResumen[]>([]);
   procesandoCambioEstado = signal(false);
+  eliminandoFactura = signal(false);
 
   // Estado del Folio de Contrarrecibo y Fecha Programada de Pago
   folioContrarreciboInput = signal<string>('');
@@ -132,6 +135,16 @@ export class DetalleFactura implements OnInit {
         etiqueta: 'Forma de pago',
         valor: this.forma(f.formaPago),
         ok: !!c.formaPagoValida,
+      },
+      {
+        etiqueta:
+          'Días de crédito en XML (Nodo <cfdi:Comprobante> atributo CondicionesDePago)',
+        valor: f.condicionesPago
+          ? `Especificado en XML: "${f.condicionesPago}"`
+          : `No hay días de crédito en XML (Falta el atributo CondicionesDePago en el nodo <cfdi:Comprobante>). Se mantiene fijo el plazo del proveedor (${f.diasCredito || 0} días).`,
+        ok: Boolean(
+          f.condicionesPago && /\b(\d+)\s*d[ií]as?\b/i.test(f.condicionesPago)
+        ),
       },
     ];
   });
@@ -284,7 +297,6 @@ export class DetalleFactura implements OnInit {
 
     const uuid = f.uuid;
     const nuevaFecha = (this.fechaProgramadaInput() || '').trim() || null;
-    const nuevosDias = this.diasCreditoInput();
 
     this.guardandoFechaPago.set(true);
     this.notificacion.set(null);
@@ -292,18 +304,12 @@ export class DetalleFactura implements OnInit {
     this.facturaService
       .actualizarProgramacionPago(uuid, {
         fechaEstimadaPago: nuevaFecha,
-        diasCredito: nuevosDias,
       })
       .subscribe({
         next: (facturaActualizada) => {
           this.factura.set(facturaActualizada);
           this.fechaProgramadaInput.set(
             facturaActualizada.fechaProgramacionPago || ''
-          );
-          this.diasCreditoInput.set(
-            facturaActualizada.diasCredito && facturaActualizada.diasCredito > 0
-              ? facturaActualizada.diasCredito
-              : null
           );
           this.guardandoFechaPago.set(false);
           this.cargarListaGlobal();
@@ -322,6 +328,35 @@ export class DetalleFactura implements OnInit {
           );
         },
       });
+  }
+
+  eliminarFacturaActual(): void {
+    if (!this.authService.esAdmin()) return;
+    const f = this.factura();
+    if (!f || !f.uuid) return;
+
+    if (
+      !confirm(
+        `¿Estás seguro de ELIMINAR permanentemente el XML de la factura ${f.folio} (${f.nombreProveedor})?`
+      )
+    ) {
+      return;
+    }
+
+    this.eliminandoFactura.set(true);
+    this.facturaService.eliminarFactura(f.uuid).subscribe({
+      next: () => {
+        this.eliminandoFactura.set(false);
+        this.regresar();
+      },
+      error: () => {
+        this.eliminandoFactura.set(false);
+        this.mostrarNotificacion(
+          'error',
+          'No se pudo eliminar la factura XML. Intenta nuevamente.'
+        );
+      },
+    });
   }
 
   private mostrarNotificacion(

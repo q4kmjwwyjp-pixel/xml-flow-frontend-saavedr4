@@ -160,9 +160,19 @@
                 </span>
               </td>
               <td>
-                <button (click)="verDetalleXml(f)" class="btn-detail">
-                  Ver Auditoría
-                </button>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button (click)="verDetalleXml(f)" class="btn-detail">
+                    Ver Auditoría
+                  </button>
+                  <button
+                    *ngIf="authService.esAdmin()"
+                    type="button"
+                    (click)="eliminarXml(f)"
+                    title="Eliminar factura XML (Solo Admin)"
+                    class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 text-xs font-bold transition cursor-pointer">
+                    🗑️
+                  </button>
+                </div>
               </td>
             </tr>
 
