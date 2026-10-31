@@ -38,9 +38,12 @@ export class DetalleFactura implements OnInit {
   todasLasFacturas = signal<FacturaResumen[]>([]);
   procesandoCambioEstado = signal(false);
 
-  // Estado del Folio de Contrarrecibo
+  // Estado del Folio de Contrarrecibo y Fecha Programada de Pago
   folioContrarreciboInput = signal<string>('');
+  fechaProgramadaInput = signal<string>('');
+  diasCreditoInput = signal<number | null>(null);
   guardandoContrarrecibo = signal<boolean>(false);
+  guardandoFechaPago = signal<boolean>(false);
   notificacion = signal<{ tipo: 'exito' | 'error'; mensaje: string } | null>(
     null
   );
@@ -200,6 +203,10 @@ export class DetalleFactura implements OnInit {
       next: (f) => {
         this.factura.set(f);
         this.folioContrarreciboInput.set(f.folioContrarrecibo || '');
+        this.fechaProgramadaInput.set(f.fechaProgramacionPago || '');
+        this.diasCreditoInput.set(
+          f.diasCredito && f.diasCredito > 0 ? f.diasCredito : null
+        );
         this.cargando.set(false);
       },
       error: (err) => {
@@ -245,6 +252,73 @@ export class DetalleFactura implements OnInit {
           this.mostrarNotificacion(
             'error',
             'No se pudo guardar el Folio de Contrarrecibo. Intenta nuevamente.'
+          );
+        },
+      });
+  }
+
+  onDiasCreditoDetalleChange(valor: number | string | null): void {
+    const dias =
+      valor !== null && valor !== '' && !Number.isNaN(Number(valor))
+        ? Math.max(0, Math.round(Number(valor)))
+        : null;
+    this.diasCreditoInput.set(dias);
+
+    if (dias !== null) {
+      const f = this.factura();
+      const baseStr = f?.fechaRevision || new Date().toISOString().split('T')[0];
+      const base = new Date(`${baseStr}T12:00:00`);
+      if (!Number.isNaN(base.getTime())) {
+        base.setDate(base.getDate() + dias);
+        const y = base.getFullYear();
+        const m = String(base.getMonth() + 1).padStart(2, '0');
+        const d = String(base.getDate()).padStart(2, '0');
+        this.fechaProgramadaInput.set(`${y}-${m}-${d}`);
+      }
+    }
+  }
+
+  guardarFechaProgramadaPago(): void {
+    const f = this.factura();
+    if (!f || !f.uuid) return;
+
+    const uuid = f.uuid;
+    const nuevaFecha = (this.fechaProgramadaInput() || '').trim() || null;
+    const nuevosDias = this.diasCreditoInput();
+
+    this.guardandoFechaPago.set(true);
+    this.notificacion.set(null);
+
+    this.facturaService
+      .actualizarProgramacionPago(uuid, {
+        fechaEstimadaPago: nuevaFecha,
+        diasCredito: nuevosDias,
+      })
+      .subscribe({
+        next: (facturaActualizada) => {
+          this.factura.set(facturaActualizada);
+          this.fechaProgramadaInput.set(
+            facturaActualizada.fechaProgramacionPago || ''
+          );
+          this.diasCreditoInput.set(
+            facturaActualizada.diasCredito && facturaActualizada.diasCredito > 0
+              ? facturaActualizada.diasCredito
+              : null
+          );
+          this.guardandoFechaPago.set(false);
+          this.cargarListaGlobal();
+          this.mostrarNotificacion(
+            'exito',
+            nuevaFecha
+              ? `Fecha programada de pago actualizada al ${nuevaFecha}.`
+              : 'Fecha programada de pago eliminada.'
+          );
+        },
+        error: () => {
+          this.guardandoFechaPago.set(false);
+          this.mostrarNotificacion(
+            'error',
+            'No se pudo guardar la fecha programada de pago. Intenta nuevamente.'
           );
         },
       });

@@ -153,6 +153,62 @@
         </div>
       }
     </div>
+
+    <!-- 3. Modificar Fecha Estimada / Programada de Pago y Días de Crédito -->
+    <div class="pt-4 border-t border-slate-100">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+        <label
+          for="inputFechaProgramadaPago"
+          class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+          <span>📅 Fecha Programada de Pago y Días de Crédito</span>
+        </label>
+        <span class="text-xs text-slate-500">
+          Ajustable según la fecha en que se recibió la factura a revisión
+        </span>
+      </div>
+
+      <form (ngSubmit)="guardarFechaProgramadaPago()" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">
+            Días de crédito
+          </label>
+          <input
+            type="number"
+            min="0"
+            max="365"
+            name="diasCredito"
+            placeholder="0 (Sin crédito por default)"
+            [ngModel]="diasCreditoInput()"
+            (ngModelChange)="onDiasCreditoDetalleChange($event)"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+        </div>
+
+        <div>
+          <label for="inputFechaProgramadaPago" class="block text-xs font-semibold text-slate-600 mb-1">
+            Fecha estimada de pago
+          </label>
+          <input
+            id="inputFechaProgramadaPago"
+            type="date"
+            name="fechaProgramadaPago"
+            [ngModel]="fechaProgramadaInput()"
+            (ngModelChange)="fechaProgramadaInput.set($event)"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="guardandoFechaPago()"
+          class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-xs transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+          @if (guardandoFechaPago()) {
+            <span class="btn-inline-spinner" aria-hidden="true"></span>
+            <span>Guardando...</span>
+          } @else {
+            <span>💾 Guardar Fecha de Pago</span>
+          }
+        </button>
+      </form>
+    </div>
   </div>
 
   <!-- Aviso de factura vencida -->

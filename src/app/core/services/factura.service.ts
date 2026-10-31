@@ -87,11 +87,12 @@ export class FacturaService {
       );
   }
 
-  // --- MÉTODOS PARA ACTUALIZAR ESTADO Y CONTRARRECIBO EN EL BACKEND ---
+  // --- MÉTODOS PARA ACTUALIZAR ESTADO, FECHA DE PAGO Y CONTRARRECIBO EN EL BACKEND ---
   actualizarContrarrecibo(
     uuid: string,
     folioContrarrecibo: string | null,
-    fechaEstimadaPago?: string
+    fechaEstimadaPago?: string | null,
+    diasCredito?: number | null
   ): Observable<FacturaResumen> {
     const body: Record<string, any> = {
       folioContrarrecibo: folioContrarrecibo ? folioContrarrecibo.trim() : null,
@@ -99,11 +100,30 @@ export class FacturaService {
     if (fechaEstimadaPago !== undefined) {
       body['fechaEstimadaPago'] = fechaEstimadaPago;
     }
+    if (diasCredito !== undefined) {
+      body['diasCredito'] = diasCredito;
+    }
 
     return this.http
       .patch<any>(
         `${this.apiUrl}/xml/${encodeURIComponent(uuid)}/contrarrecibo`,
         body
+      )
+      .pipe(map((f) => this.mapearFacturaFront(f)));
+  }
+
+  actualizarProgramacionPago(
+    uuid: string,
+    datos: {
+      fechaEstimadaPago: string | null;
+      diasCredito?: number | null;
+      folioContrarrecibo?: string | null;
+    }
+  ): Observable<FacturaResumen> {
+    return this.http
+      .patch<any>(
+        `${this.apiUrl}/xml/${encodeURIComponent(uuid)}/contrarrecibo`,
+        datos
       )
       .pipe(map((f) => this.mapearFacturaFront(f)));
   }
