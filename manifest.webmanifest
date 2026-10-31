@@ -1,7 +1,7 @@
 {
-  "name": "Vexel - Gestión de Facturas y Pagos",
-  "short_name": "Vexel",
-  "description": "Plataforma Vexel para gestión de facturas XML CFDI, proveedores, contrarrecibos y programación de pagos.",
+  "name": "VEXEL",
+  "short_name": "VEXEL",
+  "description": "Plataforma VEXEL para gestión de facturas XML CFDI, proveedores, contrarrecibos y programación de pagos.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -10,13 +10,13 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "icons/icon-192x192.png?v=2",
+      "src": "icons/icon-192x192.png?v=3",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/icon-512x512.png?v=2",
+      "src": "icons/icon-512x512.png?v=3",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
