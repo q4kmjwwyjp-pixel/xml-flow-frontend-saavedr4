@@ -9,6 +9,7 @@ import {
   obtenerDatosCatalogoPorRfc,
   resolverCodigoProveedor,
 } from '../../core/utils/catalogo-proveedores';
+import { API_URL } from '../../core/config/api.config';
 
 @Component({
   selector: 'app-upload-page',
@@ -30,7 +31,7 @@ export class UploadPage {
   cargando = signal<boolean>(false);
   mensajeError = signal<string | null>(null);
 
-  private readonly apiUrl = 'https://xml-flow-back-end.onrender.com/xml/upload';
+  private readonly apiUrl = `${API_URL}/xml/upload`;
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();

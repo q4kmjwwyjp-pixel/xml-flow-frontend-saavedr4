@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { API_URL } from '../core/config/api.config';
 
 export interface ResultadoValidacion {
   uuid?: string;
@@ -22,10 +23,10 @@ export interface ResultadoValidacion {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UploadService {
-  private readonly apiUrl = 'http://localhost:3000/api/xml/upload';
+  private readonly apiUrl = `${API_URL}/xml/upload`;
 
   public resultadoValidacion = signal<ResultadoValidacion | null>(null);
 

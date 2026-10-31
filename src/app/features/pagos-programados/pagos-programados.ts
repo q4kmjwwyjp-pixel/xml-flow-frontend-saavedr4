@@ -1,4 +1,11 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  signal,
+  computed,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -39,9 +46,12 @@ export class PagosProgramados implements OnInit {
 
   ngOnInit() {
     this.route.queryParamMap.subscribe((params) => {
-      const stateActual = (this.location.getState() as Record<string, any>) || {};
+      const stateActual =
+        (this.location.getState() as Record<string, any>) || {};
       const origenParam = params.get('origen') || stateActual['origen'];
-      this.origenNavegacion.set(origenParam === 'reportes' ? 'reportes' : 'dashboard');
+      this.origenNavegacion.set(
+        origenParam === 'reportes' ? 'reportes' : 'dashboard'
+      );
     });
 
     this.cargarFacturas();
@@ -54,14 +64,15 @@ export class PagosProgramados implements OnInit {
     this.facturaService.getFacturas().subscribe({
       next: (facturas) => {
         this.todasLasFacturas = facturas || [];
-        // Aplicamos los filtros y el orden desde el inicio
         this.aplicarFiltros();
         this.cargando.set(false);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al conectar con Render:', err);
-        this.errorCarga.set('No se pudieron obtener los comprobantes programados. Verifica tu conexión.');
+        console.error('Error al cargar comprobantes programados:', err);
+        this.errorCarga.set(
+          'No se pudieron obtener los comprobantes programados. Verifica tu conexión.'
+        );
         this.cargando.set(false);
         this.cdr.detectChanges();
       },
@@ -76,24 +87,28 @@ export class PagosProgramados implements OnInit {
     this.router.navigateByUrl('/dashboard');
   }
 
-  // Función que restaura la lógica de filtros
   aplicarFiltros() {
     this.facturasFiltradas = this.todasLasFacturas.filter((f) => {
-      const coincideFecha = !this.fechaFiltroProgramacion || f.fechaProgramacionPago === this.fechaFiltroProgramacion;
-      
+      const coincideFecha =
+        !this.fechaFiltroProgramacion ||
+        f.fechaProgramacionPago === this.fechaFiltroProgramacion;
+
       const busqueda = (this.busquedaTexto || '').toLowerCase();
-      const coincideTexto = !busqueda ||
+      const coincideTexto =
+        !busqueda ||
+        (f.folioContrarrecibo || '').toLowerCase().includes(busqueda) ||
         (f.codigoProveedor || '').toLowerCase().includes(busqueda) ||
         (f.rfcEmisor || '').toLowerCase().includes(busqueda) ||
         (f.nombreProveedor || '').toLowerCase().includes(busqueda) ||
         (f.folio || '').toString().toLowerCase().includes(busqueda);
-      
-      const coincideCondicion = this.filtroCondicion === 'TODAS' || f.metodoPago === this.filtroCondicion;
+
+      const coincideCondicion =
+        this.filtroCondicion === 'TODAS' ||
+        f.metodoPago === this.filtroCondicion;
 
       return coincideFecha && coincideTexto && coincideCondicion;
     });
 
-    // Mantenemos el orden elegido por el usuario después de filtrar
     this.ordenarLista(this.ordenSeleccionado);
   }
 
@@ -104,14 +119,18 @@ export class PagosProgramados implements OnInit {
 
   private ordenarLista(orden: string) {
     this.facturasFiltradas.sort((a, b) => {
-      const fechaA = a.fechaProgramacionPago ? new Date(a.fechaProgramacionPago).getTime() : 0;
-      const fechaB = b.fechaProgramacionPago ? new Date(b.fechaProgramacionPago).getTime() : 0;
+      const fechaA = a.fechaProgramacionPago
+        ? new Date(a.fechaProgramacionPago).getTime()
+        : 0;
+      const fechaB = b.fechaProgramacionPago
+        ? new Date(b.fechaProgramacionPago).getTime()
+        : 0;
       return orden === 'asc' ? fechaA - fechaB : fechaB - fechaA;
     });
   }
 
   esPagoHoy(fecha: string): boolean {
-    if(!fecha) return false;
+    if (!fecha) return false;
     const hoy = new Date().toISOString().split('T')[0];
     return fecha.startsWith(hoy);
   }

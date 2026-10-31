@@ -6,13 +6,14 @@ import {
   obtenerDatosCatalogoPorRfc,
   resolverCodigoProveedor,
 } from '../utils/catalogo-proveedores';
+import { API_URL } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FacturaService {
   private http = inject(HttpClient);
-  private apiUrl = 'https://xml-flow-back-end.onrender.com';
+  private apiUrl = API_URL;
 
   // 1. Obtener todas las facturas desde /xml
   getFacturas(): Observable<FacturaResumen[]> {
@@ -41,6 +42,10 @@ export class FacturaService {
     criterio?: 'pago' | 'emision' | 'recepcion';
     estado?: string;
     metodoPago?: string;
+    moneda?: string;
+    folioContrarrecibo?: string;
+    soloConContrarrecibo?: boolean;
+    ordenFolio?: 'asc' | 'desc';
   }): Observable<{
     resumen: any;
     concentradoProveedores: any[];
@@ -52,6 +57,14 @@ export class FacturaService {
     if (params?.criterio) queryParams['criterio'] = params.criterio;
     if (params?.estado) queryParams['estado'] = params.estado;
     if (params?.metodoPago) queryParams['metodoPago'] = params.metodoPago;
+    if (params?.moneda) queryParams['moneda'] = params.moneda;
+    if (params?.folioContrarrecibo) {
+      queryParams['folioContrarrecibo'] = params.folioContrarrecibo;
+    }
+    if (params?.soloConContrarrecibo !== undefined) {
+      queryParams['soloConContrarrecibo'] = String(params.soloConContrarrecibo);
+    }
+    if (params?.ordenFolio) queryParams['ordenFolio'] = params.ordenFolio;
 
     return this.http
       .get<any>(`${this.apiUrl}/xml/reporte/semanal`, { params: queryParams })
@@ -74,7 +87,27 @@ export class FacturaService {
       );
   }
 
-  // --- NUEVOS MÉTODOS PARA ACTUALIZAR ESTADO EN EL BACKEND ---
+  // --- MÉTODOS PARA ACTUALIZAR ESTADO Y CONTRARRECIBO EN EL BACKEND ---
+  actualizarContrarrecibo(
+    uuid: string,
+    folioContrarrecibo: string | null,
+    fechaEstimadaPago?: string
+  ): Observable<FacturaResumen> {
+    const body: Record<string, any> = {
+      folioContrarrecibo: folioContrarrecibo ? folioContrarrecibo.trim() : null,
+    };
+    if (fechaEstimadaPago !== undefined) {
+      body['fechaEstimadaPago'] = fechaEstimadaPago;
+    }
+
+    return this.http
+      .patch<any>(
+        `${this.apiUrl}/xml/${encodeURIComponent(uuid)}/contrarrecibo`,
+        body
+      )
+      .pipe(map((f) => this.mapearFacturaFront(f)));
+  }
+
   marcarComoPagado(uuid: string): Observable<any> {
     return this.http.patch(
       `${this.apiUrl}/xml/${encodeURIComponent(uuid)}/pagado`,
@@ -100,9 +133,17 @@ export class FacturaService {
     const codigoFinal =
       claveReal !== 'S/N' ? claveReal : `PRV-${f.proveedor?.id || '000'}`;
 
+    const monedaNormalizada = String(f.moneda || 'MXN')
+      .trim()
+      .toUpperCase();
+
     return {
       uuid: f.uuid,
       folio: f.serie ? `${f.serie}-${f.folio}` : f.folio || f.uuid,
+      folioContrarrecibo: f.folioContrarrecibo
+        ? String(f.folioContrarrecibo).trim()
+        : undefined,
+      moneda: monedaNormalizada === 'USD' ? 'USD' : 'MXN',
       codigoProveedor: codigoFinal,
       nombreProveedor:
         f.proveedor?.nombre ||
@@ -117,7 +158,7 @@ export class FacturaService {
         : '',
       fechaRevision: f.createdAt ? f.createdAt.split('T')[0] : '',
       total: Number(f.total),
-      estado: f.estado || 'Pendiente',
+      estado: f.estado || 'pendiente',
       motivoRechazo: f.motivoRechazo,
       fechaEmision: f.fechaEmision ? f.fechaEmision.split('T')[0] : '',
       subTotal: f.subTotal != null ? Number(f.subTotal) : undefined,

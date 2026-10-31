@@ -1,6 +1,6 @@
 <div class="reporte-page-wrapper page-transition-enter">
-  <!-- BARRA SUPERIOR INTEGRADA DE NAVEGACIÓN Y ACCIONES (ESTÁTICA, NUNCA FLOTA AL HACER SCROLL, OCULTA AL IMPRIMIR) -->
-  <header class="top-action-bar no-print">
+  <!-- BARRA SUPERIOR DE NAVEGACIÓN Y EXPORTACIÓN EXCEL (SIN BOTÓN PDF) -->
+  <header class="top-action-bar">
     <div class="nav-left">
       <a routerLink="/dashboard" class="btn btn-back">
         ← Regresar al Dashboard
@@ -26,27 +26,20 @@
       <button
         type="button"
         class="btn btn-excel"
-        (click)="exportarCsvContabilidad()"
-        [disabled]="facturasFiltradas.length === 0">
-        📥 Exportar Cédula a Excel (.XLSX)
-      </button>
-      <button
-        type="button"
-        class="btn btn-print"
-        (click)="imprimirReporte()"
-        [disabled]="facturasFiltradas.length === 0">
-        🖨️ Imprimir / Guardar PDF Oficial
+        (click)="exportarExcel()"
+        [disabled]="filasVistaPrevia.length === 0">
+        📥 Exportar a Excel (.XLSX)
       </button>
     </div>
   </header>
 
-  <!-- PANEL DE FILTROS INTELIGENTES DE PERIODO (OCULTO AL IMPRIMIR) -->
-  <section class="filter-card no-print" aria-label="Filtros del generador de reportes">
+  <!-- SECCIÓN SUPERIOR DE FILTROS (CONSERVADA) -->
+  <section class="filter-card" aria-label="Filtros del generador de reportes">
     <div class="filter-card-header">
       <div>
         <h2 class="filter-title">🎛️ Parámetros del Reporte Semanal y Contable</h2>
         <p class="filter-subtitle">
-          Filtra por periodo de pago, fecha de emisión fiscal o recepción para generar la póliza de dispersión o auditoría.
+          Filtra por periodo de pago, proveedor, estado o moneda para previsualizar y exportar las facturas agrupadas por Folio de Contrarrecibo.
         </p>
       </div>
 
@@ -157,6 +150,20 @@
         </select>
       </div>
 
+      <!-- Moneda -->
+      <div class="field-group">
+        <label for="filtroMoneda">💱 Moneda</label>
+        <select
+          id="filtroMoneda"
+          [(ngModel)]="filtroMoneda"
+          (change)="aplicarFiltros()"
+          class="form-input">
+          <option value="TODAS">Todas (Pesos y Dólares)</option>
+          <option value="MXN">Pesos (MXN)</option>
+          <option value="USD">Dólares (USD)</option>
+        </select>
+      </div>
+
       <!-- Proveedor específico -->
       <div class="field-group">
         <label for="filtroProveedor">🏢 Proveedor Emisor</label>
@@ -172,16 +179,42 @@
         </select>
       </div>
 
+      <!-- Filtro de Folio Contrarrecibo -->
+      <div class="field-group">
+        <label for="filtroContrarrecibo">🧾 Filtro Contrarrecibo</label>
+        <select
+          id="filtroContrarrecibo"
+          [(ngModel)]="filtroContrarrecibo"
+          (change)="aplicarFiltros()"
+          class="form-input">
+          <option value="CON_CONTRARRECIBO">Solo con Folio de Contrarrecibo</option>
+          <option value="TODAS">Todas las facturas</option>
+        </select>
+      </div>
+
+      <!-- Orden por Folio Contrarrecibo -->
+      <div class="field-group">
+        <label for="ordenFolio">🔃 Orden de Contrarrecibo</label>
+        <select
+          id="ordenFolio"
+          [(ngModel)]="ordenFolio"
+          (change)="aplicarFiltros()"
+          class="form-input">
+          <option value="asc">Folio Contrarrecibo (Ascendente)</option>
+          <option value="desc">Folio Contrarrecibo (Descendente)</option>
+        </select>
+      </div>
+
       <!-- Búsqueda libre -->
       <div class="field-group search-span">
-        <label for="busquedaReporte">🔍 Búsqueda por Folio, UUID o RFC</label>
+        <label for="busquedaReporte">🔍 Búsqueda por Folio Contrarrecibo, Factura o RFC</label>
         <div class="search-row">
           <input
             id="busquedaReporte"
             type="text"
             [(ngModel)]="busquedaTexto"
             (input)="aplicarFiltros()"
-            placeholder="Ej. A-456, UUID, RFC o razón social..."
+            placeholder="Ej. 338746, A-456, RFC o razón social..."
             class="form-input" />
           <button type="button" class="btn btn-clear" (click)="limpiarFiltros()">
             Limpiar filtros
@@ -193,344 +226,214 @@
 
   <!-- ESTADO DE CARGA O ERROR -->
   @if (cargando()) {
-    <div class="app-loader-card no-print" role="status" aria-live="polite">
+    <div class="app-loader-card" role="status" aria-live="polite">
       <div class="app-spinner-wrapper" aria-hidden="true">
         <div class="app-spinner-ring"></div>
         <div class="app-spinner-dot"></div>
       </div>
-      <h3 class="app-loader-title">Generando cédula contable y financiera...</h3>
-      <p class="app-loader-subtitle">Consultando comprobantes CFDI 4.0 validados en la base de datos.</p>
+      <h3 class="app-loader-title">Cargando vista previa del reporte...</h3>
+      <p class="app-loader-subtitle">Consultando comprobantes y agrupando por Folio de Contrarrecibo.</p>
     </div>
   }
 
   @if (errorCarga()) {
-    <div class="error-banner no-print">
+    <div class="error-banner">
       <strong>⚠️ Error de conexión:</strong> {{ errorCarga() }}
       <button type="button" class="btn btn-outline" (click)="cargarFacturas()">Reintentar</button>
     </div>
   }
 
-  <!-- DOCUMENTO OFICIAL DEL REPORTE (VISIBLE EN PANTALLA Y EN IMPRESIÓN / PDF) -->
+  <!-- NUEVA SECCIÓN: VISTA PREVIA DINÁMICA AGRUPADA POR FOLIO DE CONTRARRECIBO -->
   @if (!cargando()) {
-    <article class="reporte-documento">
-      <!-- ENCABEZADO FORMAL / MEMBRETE DEL DOCUMENTO -->
-      <header class="membrete-header">
-        <div class="membrete-empresa">
-          <div class="membrete-badge">CÉDULA DE CONTABILIDAD Y TESORERÍA · CFDI 4.0</div>
-          <h1 class="empresa-nombre">Transportes de los Santos e Hijos</h1>
-          <p class="empresa-datos-fiscales">
-            <strong>RFC Receptor:</strong> TSH7311116TL4
-            <span class="sep">|</span>
-            <strong>Régimen Fiscal:</strong> 624 (Coordinados)
-            <span class="sep">|</span>
-            <strong>Uso CFDI Autorizado:</strong> G03 (Gastos en general)
+    <section class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      <!-- Barra informativa de la Vista Previa -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-bold uppercase tracking-wider">
+              Vista Previa Dinámica
+            </span>
+            <h2 class="text-lg font-bold text-white">
+              Relación de Facturas Agrupadas por Folio de Contrarrecibo
+            </h2>
+          </div>
+          <p class="text-xs text-slate-300 mt-1">
+            Las facturas que comparten el mismo Folio de Contrarrecibo se agrupan en bloques consecutivos. El archivo Excel exportado respeta exactamente este orden y formato.
           </p>
         </div>
 
-        <div class="membrete-meta">
-          <div class="meta-row">
-            <span class="meta-label">Folio de Cédula:</span>
-            <span class="meta-value mono">{{ folioReporte }}</span>
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+          <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
+            <span class="text-slate-400 block">Facturas en vista previa</span>
+            <strong class="text-sm text-white font-mono">{{ filasVistaPrevia.length }}</strong>
           </div>
-          <div class="meta-row">
-            <span class="meta-label">Criterio del Reporte:</span>
-            <span class="meta-value">{{ etiquetaCriterioFecha }}</span>
+          <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
+            <span class="text-slate-400 block">Contrarrecibos únicos</span>
+            <strong class="text-sm text-indigo-300 font-mono">{{ totalGruposContrarrecibo }}</strong>
           </div>
-          <div class="meta-row">
-            <span class="meta-label">Periodo Consultado:</span>
-            <span class="meta-value highlight-period">{{ etiquetaRangoPeriodo }}</span>
+          <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
+            <span class="text-slate-400 block">Total MXN</span>
+            <strong class="text-sm text-emerald-400 font-mono">
+              {{ totalMontoMxn | currency:'MXN':'symbol':'1.2-2' }}
+            </strong>
           </div>
-          <div class="meta-row">
-            <span class="meta-label">Fecha/Hora de Emisión:</span>
-            <span class="meta-value">{{ fechaHoraEmisionReporte | date:'dd/MM/yyyy HH:mm:ss' }}</span>
-          </div>
-        </div>
-      </header>
-
-      <!-- SECCIÓN 1: RESUMEN FINANCIERO Y FISCAL (KPIs) -->
-      <section class="report-section">
-        <div class="section-heading">
-          <h2>1. Resumen Financiero, Fiscal y de Flujo de Efectivo</h2>
-          <span class="section-note">Importes expresados en Moneda Nacional ($ MXN)</span>
-        </div>
-
-        <!-- Fila A: Totales Fiscales (Subtotal, Impuestos, Gran Total) -->
-        <div class="kpi-grid-fiscal">
-          <div class="kpi-box kpi-neutral">
-            <span class="kpi-label">Total de CFDIs en el Periodo</span>
-            <span class="kpi-number">{{ kpis.totalCfdis }}</span>
-            <span class="kpi-foot">Comprobantes auditados en rango</span>
-          </div>
-
-          <div class="kpi-box kpi-blue">
-            <span class="kpi-label">Importe Subtotal Acumulado</span>
-            <span class="kpi-number">{{ kpis.subTotalAcumulado | currency:'MXN':'symbol':'1.2-2' }}</span>
-            <span class="kpi-foot">Base gravable antes de impuestos</span>
-          </div>
-
-          <div class="kpi-box kpi-indigo">
-            <span class="kpi-label">Impuestos Trasladados Est.</span>
-            <span class="kpi-number">{{ kpis.impuestosTrasladados | currency:'MXN':'symbol':'1.2-2' }}</span>
-            <span class="kpi-foot">Diferencia Fiscal (Total − Subtotal)</span>
-          </div>
-
-          <div class="kpi-box kpi-dark">
-            <span class="kpi-label">Gran Total Facturado ($ MXN)</span>
-            <span class="kpi-number">{{ kpis.granTotalFacturado | currency:'MXN':'symbol':'1.2-2' }}</span>
-            <span class="kpi-foot">100% del volumen del periodo</span>
-          </div>
-        </div>
-
-        <!-- Fila B: Desglose de Flujo de Efectivo (Semáforo de Tesorería) -->
-        <div class="kpi-grid-flujo">
-          <div class="flujo-card flujo-pagado">
-            <div class="flujo-header">
-              <span class="flujo-dot dot-green"></span>
-              <span class="flujo-title">Monto Ya Pagado / Liquidado</span>
+          @if (totalMontoUsd > 0) {
+            <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
+              <span class="text-slate-400 block">Total USD</span>
+              <strong class="text-sm text-amber-300 font-mono">
+                {{ totalMontoUsd | currency:'USD':'symbol':'1.2-2' }}
+              </strong>
             </div>
-            <div class="flujo-amount">{{ kpis.montoPagado | currency:'MXN':'symbol':'1.2-2' }}</div>
-            <div class="flujo-meta">{{ kpis.cantidadPagadas }} comprobante(s) saldado(s)</div>
-          </div>
-
-          <div class="flujo-card flujo-pendiente">
-            <div class="flujo-header">
-              <span class="flujo-dot dot-amber"></span>
-              <span class="flujo-title">Monto Pendiente por Pagar (En Tiempo)</span>
-            </div>
-            <div class="flujo-amount">{{ kpis.montoPendienteEnTiempo | currency:'MXN':'symbol':'1.2-2' }}</div>
-            <div class="flujo-meta">{{ kpis.cantidadPendientesEnTiempo }} comprobante(s) dentro de plazo de crédito</div>
-          </div>
-
-          <div class="flujo-card flujo-vencido">
-            <div class="flujo-header">
-              <span class="flujo-dot dot-red"></span>
-              <span class="flujo-title">Monto Vencido / Exigible Inmediato</span>
-            </div>
-            <div class="flujo-amount">{{ kpis.montoVencidoExigible | currency:'MXN':'symbol':'1.2-2' }}</div>
-            <div class="flujo-meta">{{ kpis.cantidadVencidas }} comprobante(s) con plazo vencido</div>
-          </div>
+          }
         </div>
-      </section>
+      </div>
 
-      <!-- SECCIÓN 2: CONCENTRADO DE PAGO POR PROVEEDOR (AGRUPACIÓN PARA DISPERSIÓN) -->
-      <section class="report-section">
-        <div class="section-heading">
-          <h2 id="titulo-concentrado-proveedores">2. Concentrado de Pago y Dispersión por Proveedor</h2>
-          <span class="section-note">
-            Agrupación por RFC Emisor para transferencia bancaria semanal ({{ resumenProveedores.length }} proveedores)
-          </span>
-        </div>
+      <!-- Tabla de Vista Previa (7 Columnas Requeridas, sin RFC) -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-100 border-b-2 border-slate-300 text-slate-700 text-xs uppercase tracking-wider">
+              <th class="py-3.5 px-4 font-bold text-center">1. N° Proveedor (Clave)</th>
+              <th class="py-3.5 px-4 font-bold">2. Nombre del Proveedor</th>
+              <th class="py-3.5 px-4 font-bold">3. Folio Contrarrecibo</th>
+              <th class="py-3.5 px-4 font-bold">4. Factura (Serie/Folio)</th>
+              <th class="py-3.5 px-4 font-bold text-center">5. Fecha Programada de Pago</th>
+              <th class="py-3.5 px-4 font-bold text-right">6. Monto / Total</th>
+              <th class="py-3.5 px-4 font-bold text-center">7. Moneda</th>
+            </tr>
+          </thead>
 
-        <div
-          tabindex="0"
-          role="region"
-          aria-labelledby="titulo-concentrado-proveedores"
-          class="table-wrapper">
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>RFC Emisor</th>
-                <th>Razón Social del Proveedor</th>
-                <th>Régimen Fiscal</th>
-                <th class="text-center">CFDIs</th>
-                <th class="text-right">Subtotal</th>
-                <th class="text-right">Impuestos</th>
-                <th class="text-right">Monto Pagado</th>
-                <th class="text-right highlight-col">Saldo Pendiente a Transferir</th>
-                <th class="text-right">Total Facturado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (p of resumenProveedores; track p.rfc) {
-                <tr>
-                  <th scope="row" class="mono font-semibold">{{ p.codigoProveedor }}</th>
-                  <td class="mono">{{ p.rfc }}</td>
-                  <td class="font-semibold">{{ p.nombre }}</td>
-                  <td class="text-small">{{ describirRegimen(p.regimenFiscal) }}</td>
-                  <td class="text-center">{{ p.cantidadFacturas }}</td>
-                  <td class="text-right mono">{{ p.subTotal | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono">{{ p.impuestos | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono text-success">{{ p.montoPagado | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono highlight-col font-bold">
-                    {{ p.saldoPendiente | currency:'MXN':'symbol':'1.2-2' }}
-                  </td>
-                  <td class="text-right mono font-bold">{{ p.total | currency:'MXN':'symbol':'1.2-2' }}</td>
-                </tr>
-              }
+          <tbody>
+            @for (fila of filasVistaPrevia; track fila.factura.uuid || fila.folioFactura) {
+              <tr
+                class="transition-colors"
+                [ngClass]="[
+                  fila.indiceGrupo % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-indigo-50/45 hover:bg-indigo-50/80',
+                  fila.esInicioGrupo ? 'border-t-2 border-indigo-200' : 'border-t border-slate-100',
+                  fila.indiceGrupo % 2 === 0 ? 'border-l-4 border-l-blue-600' : 'border-l-4 border-l-indigo-600'
+                ]">
+                <!-- 1. N° Proveedor (Clave) -->
+                <td class="py-3.5 px-4 text-center font-mono font-bold text-slate-800">
+                  #{{ fila.claveProveedor }}
+                </td>
 
-              @if (resumenProveedores.length === 0) {
-                <tr>
-                  <td colspan="10" class="empty-row">
-                    No existen proveedores con facturación en el periodo y filtros seleccionados.
-                  </td>
-                </tr>
-              }
-            </tbody>
-            @if (resumenProveedores.length > 0) {
-              <tfoot>
-                <tr class="totals-row">
-                  <td colspan="4" class="text-right font-bold">TOTALES POR PROVEEDORES:</td>
-                  <td class="text-center font-bold">{{ kpis.totalCfdis }}</td>
-                  <td class="text-right mono font-bold">{{ kpis.subTotalAcumulado | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono font-bold">{{ kpis.impuestosTrasladados | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono font-bold text-success">{{ kpis.montoPagado | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono font-bold highlight-col">
-                    {{ (kpis.montoPendienteEnTiempo + kpis.montoVencidoExigible) | currency:'MXN':'symbol':'1.2-2' }}
-                  </td>
-                  <td class="text-right mono font-bold">{{ kpis.granTotalFacturado | currency:'MXN':'symbol':'1.2-2' }}</td>
-                </tr>
-              </tfoot>
-            }
-          </table>
-        </div>
-      </section>
+                <!-- 2. Nombre del Proveedor -->
+                <td class="py-3.5 px-4 font-semibold text-slate-900">
+                  {{ fila.razonSocial }}
+                </td>
 
-      <!-- SECCIÓN 3: CÉDULA DETALLADA DE COMPROBANTES (CFDI 4.0) -->
-      <section class="report-section">
-        <div class="section-heading">
-          <h2 id="titulo-cedula-detallada">3. Cédula Detallada de Comprobantes Fiscales (CFDI 4.0)</h2>
-          <span class="section-note">
-            Relación analítica de facturas para póliza contable y auditoría SAT ({{ facturasFiltradas.length }} registros)
-          </span>
-        </div>
+                <!-- 3. Folio Contrarrecibo -->
+                <td class="py-3.5 px-4 font-mono">
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                      [ngClass]="
+                        fila.indiceGrupo % 2 === 0
+                          ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                          : 'bg-indigo-100 text-indigo-900 border border-indigo-300'
+                      ">
+                      #{{ fila.folioContrarrecibo }}
+                    </span>
 
-        <div
-          tabindex="0"
-          role="region"
-          aria-labelledby="titulo-cedula-detallada"
-          class="table-wrapper">
-          <table class="report-table detailed-table">
-            <thead>
-              <tr>
-                <th>Folio</th>
-                <th>UUID Fiscal (Timbre)</th>
-                <th>Proveedor (Nombre y RFC)</th>
-                <th>Uso CFDI / Régimen</th>
-                <th>Método / Forma Pago</th>
-                <th>Fecha Emisión</th>
-                <th>Fecha Límite Pago</th>
-                <th>Estatus de Plazo</th>
-                <th class="text-right">Subtotal</th>
-                <th class="text-right">Impuestos</th>
-                <th class="text-right">Total</th>
-                <th class="text-center">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (f of facturasFiltradas; track f.uuid || f.folio) {
-                @let estadoEf = obtenerEstadoEfectivo(f);
-                @let estatusPlazo = obtenerEstatusPlazo(f);
-                <tr>
-                  <th scope="row" class="mono font-bold">
-                    <a
-                      [routerLink]="['/pagos-programados', f.uuid]"
-                      [queryParams]="{ origen: 'reportes' }"
-                      [state]="{ origen: 'reportes' }"
-                      class="folio-link"
-                      title="Ver auditoría individual de la factura">
-                      {{ f.folio }}
-                    </a>
-                  </th>
-                  <td class="mono uuid-cell" [title]="f.uuid || 'Sin UUID'">
-                    {{ f.uuid || 'N/A' }}
-                  </td>
-                  <td>
-                    <div class="cell-stack">
-                      <span class="font-semibold">{{ f.nombreProveedor }}</span>
-                      <span class="sub-text mono">{{ f.rfcEmisor }} · {{ f.codigoProveedor }}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="cell-stack">
-                      <span><strong>Uso:</strong> {{ f.usoCfdi || 'G03' }}</span>
-                      <span class="sub-text"><strong>Rég. Rec:</strong> {{ f.regimenReceptor || '624' }}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="cell-stack">
-                      <span class="method-pill" [ngClass]="f.metodoPago.toLowerCase()">
-                        {{ f.metodoPago }} ({{ f.metodoPago === 'PPD' ? 'Crédito' : 'Contado' }})
+                    @if (fila.tamanoGrupo > 1 && fila.esInicioGrupo) {
+                      <span
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"
+                        title="Este contrarrecibo agrupa {{ fila.tamanoGrupo }} facturas">
+                        {{ fila.tamanoGrupo }} facturas
                       </span>
-                      <span class="sub-text">Forma: {{ describirFormaPago(f.formaPago) }}</span>
-                    </div>
-                  </td>
-                  <td class="mono whitespace-nowrap">{{ f.fechaEmision || f.fechaRevision || '—' }}</td>
-                  <td class="mono whitespace-nowrap font-semibold">
-                    {{ f.fechaProgramacionPago || f.fechaEmision || 'Contado' }}
-                  </td>
-                  <td>
-                    <span class="plazo-badge" [ngClass]="estatusPlazo.clase">
-                      {{ estatusPlazo.texto }}
-                    </span>
-                  </td>
-                  <td class="text-right mono">{{ obtenerSubtotal(f) | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono">{{ obtenerImpuestos(f) | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-right mono font-bold">{{ f.total | currency:'MXN':'symbol':'1.2-2' }}</td>
-                  <td class="text-center">
-                    <span class="estado-pill" [ngClass]="estadoEf">
-                      {{ estadoEf | uppercase }}
-                    </span>
-                  </td>
-                </tr>
-              }
+                    }
+                  </div>
+                </td>
 
-              @if (facturasFiltradas.length === 0) {
-                <tr>
-                  <td colspan="12" class="empty-row">
-                    No se encontraron comprobantes CFDI 4.0 que coincidan con el periodo o filtros seleccionados.
-                  </td>
-                </tr>
-              }
-            </tbody>
-            @if (facturasFiltradas.length > 0) {
-              <tfoot>
-                <tr class="totals-row">
-                  <td colspan="8" class="text-right font-bold">
-                    SUMAS TOTALES DE LA CÉDULA ({{ kpis.totalCfdis }} COMPROBANTES):
-                  </td>
-                  <td class="text-right mono font-bold">
-                    {{ kpis.subTotalAcumulado | currency:'MXN':'symbol':'1.2-2' }}
-                  </td>
-                  <td class="text-right mono font-bold">
-                    {{ kpis.impuestosTrasladados | currency:'MXN':'symbol':'1.2-2' }}
-                  </td>
-                  <td class="text-right mono font-bold total-grand-cell">
-                    {{ kpis.granTotalFacturado | currency:'MXN':'symbol':'1.2-2' }}
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
+                <!-- 4. Factura (Serie/Folio) -->
+                <td class="py-3.5 px-4 font-mono font-bold">
+                  <a
+                    [routerLink]="['/pagos-programados', fila.factura.uuid]"
+                    [queryParams]="{ origen: 'reportes' }"
+                    [state]="{ origen: 'reportes' }"
+                    class="text-blue-600 hover:text-blue-800 hover:underline"
+                    title="Abrir detalle de la factura para editar estado o contrarrecibo">
+                    {{ fila.folioFactura }}
+                  </a>
+                </td>
+
+                <!-- 5. Fecha Programada de Pago -->
+                <td class="py-3.5 px-4 text-center font-mono text-slate-800 whitespace-nowrap">
+                  {{ formatearFechaLatam(fila.fechaProgramada) }}
+                </td>
+
+                <!-- 6. Monto / Total -->
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
+                  {{ fila.montoTotal | currency:fila.monedaCodigo:'symbol':'1.2-2' }}
+                </td>
+
+                <!-- 7. Moneda (Pesos / Dólares) -->
+                <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
+                    [ngClass]="
+                      fila.monedaCodigo === 'USD'
+                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    ">
+                    {{ fila.monedaEtiqueta }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="py-12 px-6 text-center text-slate-500">
+                  <div class="max-w-md mx-auto space-y-3">
+                    <p class="font-semibold text-slate-700">
+                      No se encontraron facturas con Folio de Contrarrecibo para los filtros seleccionados.
+                    </p>
+                    <p class="text-xs text-slate-500">
+                      Puedes asignar un Folio de Contrarrecibo desde el detalle de cualquier factura en Pagos Programados, o cambiar el filtro superior para ver todas las facturas.
+                    </p>
+                    @if (filtroContrarrecibo === 'CON_CONTRARRECIBO' && todasLasFacturas.length > 0) {
+                      <button
+                        type="button"
+                        (click)="filtroContrarrecibo = 'TODAS'; aplicarFiltros()"
+                        class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition cursor-pointer">
+                        Mostrar todas las facturas ({{ todasLasFacturas.length }})
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
             }
-          </table>
-        </div>
-      </section>
+          </tbody>
 
-      <!-- SECCIÓN 4: PIE DE FIRMAS PARA IMPRESIÓN Y CONTROL INTERNO -->
-      <footer class="firmas-section">
-        <div class="firmas-intro">
-          Certificación de Revisión Fiscal CFDI 4.0 y Autorización de Dispersión de Fondos — Transportes de los Santos e Hijos (TSH7311116TL4)
-        </div>
-        <div class="firmas-grid">
-          <div class="firma-bloque">
-            <div class="firma-linea"></div>
-            <p class="firma-cargo">Elaboró: Recepción XML</p>
-            <p class="firma-sub">Captura y Validación de Comprobantes</p>
-          </div>
-
-          <div class="firma-bloque">
-            <div class="firma-linea"></div>
-            <p class="firma-cargo">Validó: Contabilidad General</p>
-            <p class="firma-sub">Revisión Fiscal SAT (Régimen 624 / Uso G03)</p>
-          </div>
-
-          <div class="firma-bloque">
-            <div class="firma-linea"></div>
-            <p class="firma-cargo">Autorizó Dispersión: Tesorería / Dirección</p>
-            <p class="firma-sub">Liberación de Transferencias Bancarias</p>
-          </div>
-        </div>
-      </footer>
-    </article>
+          @if (filasVistaPrevia.length > 0) {
+            <tfoot>
+              <tr class="bg-slate-100 border-t-2 border-slate-800 font-bold text-slate-900">
+                <td colspan="5" class="py-3.5 px-4 text-right uppercase text-xs tracking-wider">
+                  Total en Vista Previa ({{ filasVistaPrevia.length }} facturas en {{ totalGruposContrarrecibo }} contrarrecibos):
+                </td>
+                <td class="py-3.5 px-4 text-right font-mono text-base text-blue-900 bg-blue-50">
+                  {{ totalMontoMxn | currency:'MXN':'symbol':'1.2-2' }}
+                </td>
+                <td class="py-3.5 px-4 text-center text-xs text-slate-700">
+                  Pesos (MXN)
+                </td>
+              </tr>
+              @if (totalMontoUsd > 0) {
+                <tr class="bg-slate-100 border-t border-slate-300 font-bold text-slate-900">
+                  <td colspan="5" class="py-3 px-4 text-right uppercase text-xs tracking-wider">
+                    Total en Dólares (USD):
+                  </td>
+                  <td class="py-3 px-4 text-right font-mono text-base text-amber-900 bg-amber-50">
+                    {{ totalMontoUsd | currency:'USD':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="py-3 px-4 text-center text-xs text-slate-700">
+                    Dólares (USD)
+                  </td>
+                </tr>
+              }
+            </tfoot>
+          }
+        </table>
+      </div>
+    </section>
   }
 </div>

@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Location } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FacturaService } from '../../core/services/factura.service';
 import { FacturaResumen } from '../../core/models/factura.model';
@@ -20,7 +21,8 @@ interface CheckFiscal {
 
 @Component({
   selector: 'app-detalle-factura',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './detalle-factura.html',
   styleUrl: './detalle-factura.css',
 })
@@ -33,7 +35,15 @@ export class DetalleFactura implements OnInit {
   cargando = signal(true);
   error = signal('');
   factura = signal<FacturaResumen | null>(null);
-  procesandoCambioEstado = signal(false); // Para deshabilitar botones mientras carga
+  todasLasFacturas = signal<FacturaResumen[]>([]);
+  procesandoCambioEstado = signal(false);
+
+  // Estado del Folio de Contrarrecibo
+  folioContrarreciboInput = signal<string>('');
+  guardandoContrarrecibo = signal<boolean>(false);
+  notificacion = signal<{ tipo: 'exito' | 'error'; mensaje: string } | null>(
+    null
+  );
 
   origenNavegacion = signal<'reportes' | 'pagos' | 'dashboard'>('pagos');
   retornoPagos = signal<'reportes' | 'dashboard'>('dashboard');
@@ -45,26 +55,45 @@ export class DetalleFactura implements OnInit {
     return '← Volver a Pagos Programados';
   });
 
+  /** Facturas adicionales que comparten el mismo Folio de Contrarrecibo */
+  otrasFacturasConMismoFolio = computed(() => {
+    const actual = this.factura();
+    const folioBuscado = (
+      this.folioContrarreciboInput() ||
+      actual?.folioContrarrecibo ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+    if (!folioBuscado) return [];
+
+    return this.todasLasFacturas().filter(
+      (f) =>
+        f.uuid !== actual?.uuid &&
+        (f.folioContrarrecibo || '').trim().toUpperCase() === folioBuscado
+    );
+  });
+
   /** Estado de vencimiento calculado a partir de la fecha límite de pago. */
   vencimiento = computed(() => {
     const f = this.factura();
     return f ? calcularVencimiento(f) : null;
   });
 
-  /** Etiqueta y clase CSS del estado. Adaptado al nuevo modelo: Pendiente, Pagado, Vencido */
+  /** Etiqueta y clase CSS del estado. Adaptado al modelo: Pendiente, Pagado, Vencido */
   estadoVisual = computed(() => {
     const f = this.factura();
     if (!f) return { texto: '', clase: '' };
-    
-    // Leemos el estado directo de la base de datos (pasando a minúsculas para asegurar coincidencia)
+
     const estadoDB = (f.estado || 'pendiente').toLowerCase();
 
     if (estadoDB === 'pagado') return { texto: '🟢 PAGADO', clase: 'pagada' };
-    if (estadoDB === 'vencido') return { texto: '🔴 VENCIDA', clase: 'vencida' };
-    
-    // Si está pendiente, evaluamos si ya se pasó la fecha
-    if (this.vencimiento()?.vencida) return { texto: '🔴 VENCIDA (NO PAGADA)', clase: 'vencida' };
-    
+    if (estadoDB === 'vencido')
+      return { texto: '🔴 VENCIDA', clase: 'vencida' };
+
+    if (this.vencimiento()?.vencida)
+      return { texto: '🔴 VENCIDA (NO PAGADA)', clase: 'vencida' };
+
     return { texto: '🟡 PENDIENTE', clase: 'programada' };
   });
 
@@ -81,18 +110,36 @@ export class DetalleFactura implements OnInit {
     if (!f) return [];
     const c = f.checksFiscales;
     return [
-      { etiqueta: 'Régimen fiscal del receptor', valor: this.regimen(f.regimenReceptor), ok: !!c.regimenValido },
-      { etiqueta: 'Uso de CFDI', valor: this.uso(f.usoCfdi), ok: !!c.usoCfdiValido },
-      { etiqueta: 'Método de pago', valor: this.metodo(f.metodoPago), ok: !!c.metodoPagoValido },
-      { etiqueta: 'Forma de pago', valor: this.forma(f.formaPago), ok: !!c.formaPagoValida },
+      {
+        etiqueta: 'Régimen fiscal del receptor',
+        valor: this.regimen(f.regimenReceptor),
+        ok: !!c.regimenValido,
+      },
+      {
+        etiqueta: 'Uso de CFDI',
+        valor: this.uso(f.usoCfdi),
+        ok: !!c.usoCfdiValido,
+      },
+      {
+        etiqueta: 'Método de pago',
+        valor: this.metodo(f.metodoPago),
+        ok: !!c.metodoPagoValido,
+      },
+      {
+        etiqueta: 'Forma de pago',
+        valor: this.forma(f.formaPago),
+        ok: !!c.formaPagoValida,
+      },
     ];
   });
 
   ngOnInit() {
     this.route.queryParamMap.subscribe((qParams) => {
-      const stateActual = (this.location.getState() as Record<string, any>) || {};
+      const stateActual =
+        (this.location.getState() as Record<string, any>) || {};
       const origen = qParams.get('origen') || stateActual['origen'] || 'pagos';
-      const retorno = qParams.get('retorno') || stateActual['retorno'] || 'dashboard';
+      const retorno =
+        qParams.get('retorno') || stateActual['retorno'] || 'dashboard';
 
       if (origen === 'reportes') {
         this.origenNavegacion.set('reportes');
@@ -105,6 +152,8 @@ export class DetalleFactura implements OnInit {
       this.retornoPagos.set(retorno === 'reportes' ? 'reportes' : 'dashboard');
     });
 
+    this.cargarListaGlobal();
+
     this.route.paramMap.subscribe((params) => {
       const uuid = params.get('uuid');
       if (!uuid) {
@@ -113,6 +162,13 @@ export class DetalleFactura implements OnInit {
         return;
       }
       this.cargar(uuid);
+    });
+  }
+
+  private cargarListaGlobal(): void {
+    this.facturaService.getFacturas().subscribe({
+      next: (lista) => this.todasLasFacturas.set(lista || []),
+      error: () => {},
     });
   }
 
@@ -127,7 +183,6 @@ export class DetalleFactura implements OnInit {
       return;
     }
 
-    // Regresar a Pagos Programados conservando el origen previo (ej. si venía de Reportes Semanales)
     if (this.retornoPagos() === 'reportes') {
       this.router.navigate(['/pagos-programados'], {
         queryParams: { origen: 'reportes' },
@@ -144,39 +199,96 @@ export class DetalleFactura implements OnInit {
     this.facturaService.getFacturaPorUuid(uuid).subscribe({
       next: (f) => {
         this.factura.set(f);
+        this.folioContrarreciboInput.set(f.folioContrarrecibo || '');
         this.cargando.set(false);
       },
       error: (err) => {
         console.error('Error al cargar el detalle de la factura:', err);
-        this.error.set('No se pudo cargar la factura. Verifica tu conexión o que la factura exista.');
+        this.error.set(
+          'No se pudo cargar la factura. Verifica tu conexión o que la factura exista.'
+        );
         this.cargando.set(false);
       },
     });
   }
 
-  // --- NUEVAS FUNCIONES PARA MARCAR ESTADOS MANUAMENTE ---
+  guardarFolioContrarrecibo(): void {
+    const f = this.factura();
+    if (!f || !f.uuid) return;
+
+    const uuid = f.uuid;
+    const nuevoFolio = (this.folioContrarreciboInput() || '').trim();
+
+    this.guardandoContrarrecibo.set(true);
+    this.notificacion.set(null);
+
+    this.facturaService
+      .actualizarContrarrecibo(uuid, nuevoFolio || null)
+      .subscribe({
+        next: (facturaActualizada) => {
+          this.factura.set(facturaActualizada);
+          this.folioContrarreciboInput.set(
+            facturaActualizada.folioContrarrecibo || ''
+          );
+          this.guardandoContrarrecibo.set(false);
+          this.cargarListaGlobal();
+          this.mostrarNotificacion(
+            'exito',
+            nuevoFolio
+              ? `Folio de Contrarrecibo #${nuevoFolio} guardado correctamente.`
+              : 'Folio de Contrarrecibo desvinculado correctamente.'
+          );
+        },
+        error: (err) => {
+          console.error('Error al guardar folio de contrarrecibo:', err);
+          this.guardandoContrarrecibo.set(false);
+          this.mostrarNotificacion(
+            'error',
+            'No se pudo guardar el Folio de Contrarrecibo. Intenta nuevamente.'
+          );
+        },
+      });
+  }
+
+  private mostrarNotificacion(
+    tipo: 'exito' | 'error',
+    mensaje: string
+  ): void {
+    this.notificacion.set({ tipo, mensaje });
+    setTimeout(() => {
+      if (this.notificacion()?.mensaje === mensaje) {
+        this.notificacion.set(null);
+      }
+    }, 4500);
+  }
 
   marcarComoPagado() {
     const f = this.factura();
     if (!f || !f.uuid) return;
-    
-    const uuid = f.uuid; // <-- Guardamos en constante para que TypeScript sea feliz
 
-    // Confirmación simple nativa de navegador
-    if (!confirm(`¿Estás seguro de marcar la factura ${f.folio} como PAGADA?`)) return;
+    const uuid = f.uuid;
+
+    if (!confirm(`¿Estás seguro de marcar la factura ${f.folio} como PAGADA?`))
+      return;
 
     this.procesandoCambioEstado.set(true);
-    this.facturaService.marcarComoPagado(uuid).subscribe({ // <-- Usamos la constante
+    this.facturaService.marcarComoPagado(uuid).subscribe({
       next: () => {
-        // Recargamos los datos para que el estado se actualice visualmente
-        this.cargar(uuid); // <-- Usamos la constante
+        this.cargar(uuid);
         this.procesandoCambioEstado.set(false);
+        this.mostrarNotificacion(
+          'exito',
+          `La factura ${f.folio} fue marcada como PAGADA.`
+        );
       },
       error: (err) => {
         console.error('Error al actualizar a Pagado:', err);
-        alert('Ocurrió un error al actualizar el estado de la factura.');
         this.procesandoCambioEstado.set(false);
-      }
+        this.mostrarNotificacion(
+          'error',
+          'Ocurrió un error al actualizar el estado de la factura.'
+        );
+      },
     });
   }
 
@@ -184,21 +296,29 @@ export class DetalleFactura implements OnInit {
     const f = this.factura();
     if (!f || !f.uuid) return;
 
-    const uuid = f.uuid; // <-- Guardamos en constante 
+    const uuid = f.uuid;
 
-    if (!confirm(`¿Estás seguro de marcar la factura ${f.folio} como VENCIDA?`)) return;
+    if (!confirm(`¿Estás seguro de marcar la factura ${f.folio} como VENCIDA?`))
+      return;
 
     this.procesandoCambioEstado.set(true);
-    this.facturaService.marcarComoVencido(uuid).subscribe({ // <-- Usamos la constante
+    this.facturaService.marcarComoVencido(uuid).subscribe({
       next: () => {
-        this.cargar(uuid); // <-- Usamos la constante
+        this.cargar(uuid);
         this.procesandoCambioEstado.set(false);
+        this.mostrarNotificacion(
+          'exito',
+          `La factura ${f.folio} fue marcada como VENCIDA.`
+        );
       },
       error: (err) => {
         console.error('Error al actualizar a Vencido:', err);
-        alert('Ocurrió un error al actualizar el estado de la factura.');
         this.procesandoCambioEstado.set(false);
-      }
+        this.mostrarNotificacion(
+          'error',
+          'Ocurrió un error al actualizar el estado de la factura.'
+        );
+      },
     });
   }
 

@@ -1,8 +1,7 @@
-
 export interface ChecksFiscales {
   rfcValido?: boolean;
   rfcReceptorValido?: boolean;
-  razonSocialValida?: boolean;      
+  razonSocialValida?: boolean;
   regimenValido?: boolean;
   usoCfdiValido?: boolean;
   metodoTransferencia?: boolean;
@@ -13,20 +12,22 @@ export interface ChecksFiscales {
 
 export interface FacturaResumen {
   id?: number | string;
-  estado: 'pendiente' | 'pagado' | 'vencido'
+  estado: 'pendiente' | 'pagado' | 'vencido';
   folio: string;
+  folioContrarrecibo?: string;
+  moneda?: string;
   codigoProveedor: string;
   codigo?: string;
   nombreProveedor: string;
   proveedor?: string;
   rfcEmisor: string;
-  condicion?: string;               // <-- Con '?' porque la rechazada no lo trae
+  condicion?: string;
   credito?: string;
   creditoDias?: number;
   diasCredito?: number;
   fechaRevision?: string;
   fechaProgramacionPago: string;
-  metodoPago: string;               // <-- Sin '?' para que el HTML no marque 'possibly undefined'
+  metodoPago: string;
   formaPago?: string;
   total: number;
   motivoRechazo?: string;

@@ -19,44 +19,145 @@
   </div>
   } @else if (factura(); as f) {
 
+  <!-- Toast / Notificación de retroalimentación visual -->
+  @if (notificacion(); as notif) {
+    <div
+      role="status"
+      aria-live="polite"
+      class="p-4 rounded-xl border text-sm font-medium flex items-center justify-between gap-3 shadow-xs transition"
+      [ngClass]="
+        notif.tipo === 'exito'
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          : 'bg-rose-50 border-rose-200 text-rose-800'
+      ">
+      <div class="flex items-center gap-2">
+        <span>{{ notif.tipo === 'exito' ? '✅' : '⚠️' }}</span>
+        <span>{{ notif.mensaje }}</span>
+      </div>
+      <button
+        type="button"
+        (click)="notificacion.set(null)"
+        class="text-xs font-bold opacity-70 hover:opacity-100 cursor-pointer">
+        ✕
+      </button>
+    </div>
+  }
+
   <!-- Encabezado -->
   <header class="detalle-header">
     <div>
-      <h1>Factura {{ f.folio }}</h1>
+      <div class="flex items-center flex-wrap gap-2.5">
+        <h1>Factura {{ f.folio }}</h1>
+        @if (f.folioContrarrecibo) {
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-200">
+            🧾 Contrarrecibo #{{ f.folioContrarrecibo }}
+          </span>
+        }
+      </div>
       <p class="subtitle">Proveedor #{{ f.codigoProveedor }} · {{ f.nombreProveedor }} · RFC {{ f.rfcEmisor }}</p>
     </div>
     <span [class]="'status-badge ' + estadoVisual().clase">{{ estadoVisual().texto }}</span>
   </header>
 
-  <!-- Panel de Acciones Manuales de Estado -->
-  <div class="actions-panel">
-    <span class="actions-label">Actualizar estado manualmente:</span>
-    <div class="buttons-group">
-      <button 
-        class="btn-action success" 
-        (click)="marcarComoPagado()" 
-        [disabled]="procesandoCambioEstado() || f.estado?.toLowerCase() === 'pagado'">
-        @if (procesandoCambioEstado()) {
-          <span class="btn-inline-spinner" aria-hidden="true"></span>
+  <!-- Panel de Acciones Manuales de Estado + Folio de Contrarrecibo (ERP / Advan) -->
+  <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-5">
+    <!-- 1. Actualizar Estado Manualmente -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+        Actualizar estado manualmente:
+      </span>
+      <div class="buttons-group">
+        <button
+          class="btn-action success"
+          (click)="marcarComoPagado()"
+          [disabled]="procesandoCambioEstado() || f.estado.toLowerCase() === 'pagado'">
+          @if (procesandoCambioEstado()) {
+            <span class="btn-inline-spinner" aria-hidden="true"></span>
+          }
+          💰 Marcar como Pagada
+        </button>
+
+        <button
+          class="btn-action danger"
+          (click)="marcarComoVencido()"
+          [disabled]="procesandoCambioEstado() || f.estado.toLowerCase() === 'vencido'">
+          @if (procesandoCambioEstado()) {
+            <span class="btn-inline-spinner" aria-hidden="true"></span>
+          }
+          ⚠️ Marcar como Vencida
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Asignación de Folio de Contrarrecibo (ERP / Advan) -->
+    <div>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+        <label
+          for="inputFolioContrarrecibo"
+          class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+          <span>🧾 Folio de Contrarrecibo (ERP / Advan)</span>
+        </label>
+
+        <!-- Contador de otras facturas que comparten el mismo contrarrecibo -->
+        @if ((folioContrarreciboInput() || f.folioContrarrecibo || '').trim()) {
+          @if (otrasFacturasConMismoFolio().length > 0) {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              🔗 Compartido con {{ otrasFacturasConMismoFolio().length }}
+              {{ otrasFacturasConMismoFolio().length === 1 ? 'otra factura' : 'otras facturas' }}
+            </span>
+          } @else {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ✓ Folio único asignado
+            </span>
+          }
         }
-        💰 Marcar como Pagada
-      </button>
-      
-      <button 
-        class="btn-action danger" 
-        (click)="marcarComoVencido()" 
-        [disabled]="procesandoCambioEstado() || f.estado?.toLowerCase() === 'vencido'">
-        @if (procesandoCambioEstado()) {
-          <span class="btn-inline-spinner" aria-hidden="true"></span>
-        }
-        ⚠️ Marcar como Vencida
-      </button>
+      </div>
+
+      <p class="text-xs text-slate-500 mb-3">
+        Asigna el número de contrarrecibo emitido por el ERP para incluir y agrupar esta factura en el Generador de Reportes Semanales.
+      </p>
+
+      <form (ngSubmit)="guardarFolioContrarrecibo()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <input
+          id="inputFolioContrarrecibo"
+          type="text"
+          name="folioContrarrecibo"
+          [ngModel]="folioContrarreciboInput()"
+          (ngModelChange)="folioContrarreciboInput.set($event)"
+          placeholder="Ej. 338746"
+          class="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-mono text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+
+        <button
+          type="submit"
+          [disabled]="guardandoContrarrecibo()"
+          class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-xs transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+          @if (guardandoContrarrecibo()) {
+            <span class="btn-inline-spinner" aria-hidden="true"></span>
+            <span>Guardando...</span>
+          } @else {
+            <span>💾 {{ f.folioContrarrecibo ? 'Actualizar Folio' : 'Guardar Folio' }}</span>
+          }
+        </button>
+      </form>
+
+      @if (otrasFacturasConMismoFolio().length > 0) {
+        <div class="mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+          <span class="font-semibold text-slate-700">Facturas agrupadas en este mismo contrarrecibo:</span>
+          <div class="flex flex-wrap gap-1.5 mt-1.5">
+            @for (otra of otrasFacturasConMismoFolio(); track otra.uuid) {
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 font-mono text-slate-700">
+                {{ otra.folio }} ({{ moneda(otra.total) }})
+              </span>
+            }
+          </div>
+        </div>
+      }
     </div>
   </div>
 
   <!-- Aviso de factura vencida -->
   @if (vencimiento(); as v) {
-  @if (v.vencida && f.estado?.toLowerCase() !== 'pagado') {
+  @if (v.vencida && f.estado.toLowerCase() !== 'pagado') {
   <div class="alert-vencida" role="alert">
     <strong>Factura vencida.</strong>
     El plazo de crédito terminó el {{ f.fechaProgramacionPago }}
@@ -69,11 +170,15 @@
   <div class="card">
     <h2 class="card-title">Detalle de la factura</h2>
     <div class="total-box">
-      <span class="total-label">Monto total</span>
-      <span class="total-value">{{ moneda(f.total) }}</span>
+      <span class="total-label">Monto total ({{ f.moneda === 'USD' ? 'Dólares USD' : 'Pesos MXN' }})</span>
+      <span class="total-value">{{ moneda(f.total) }} {{ f.moneda || 'MXN' }}</span>
     </div>
     <dl class="info-grid">
-      <div class="info-item"><dt>Folio</dt><dd>{{ f.folio }}</dd></div>
+      <div class="info-item"><dt>Folio Factura</dt><dd class="font-semibold">{{ f.folio }}</dd></div>
+      <div class="info-item">
+        <dt>Folio de Contrarrecibo</dt>
+        <dd class="mono font-bold text-indigo-700">{{ f.folioContrarrecibo ? '#' + f.folioContrarrecibo : 'Sin asignar' }}</dd>
+      </div>
       <div class="info-item"><dt>UUID (folio fiscal)</dt><dd class="mono">{{ f.uuid || '—' }}</dd></div>
       <div class="info-item"><dt>N° de Proveedor (Clave)</dt><dd class="mono"><strong>#{{ f.codigoProveedor }}</strong></dd></div>
       <div class="info-item"><dt>Razón Social del Proveedor</dt><dd>{{ f.nombreProveedor }}</dd></div>
@@ -139,12 +244,12 @@
     </dl>
 
     @if (vencimiento(); as v) {
-    <div class="plazo" [class.vencido]="v.vencida && f.estado?.toLowerCase() !== 'pagado'">
-      @if (f.estado?.toLowerCase() === 'pagado') {
+    <div class="plazo" [class.vencido]="v.vencida && f.estado.toLowerCase() !== 'pagado'">
+      @if (f.estado.toLowerCase() === 'pagado') {
       Factura saldada.
       } @else if (v.vencida) {
       Vencida hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}
-      } @else if (f.estado?.toLowerCase() === 'vencido') {
+      } @else if (f.estado.toLowerCase() === 'vencido') {
       Factura rechazada/vencida manualmente.
       } @else if (!esCredito()) {
       Pago de contado: sin plazo pendiente

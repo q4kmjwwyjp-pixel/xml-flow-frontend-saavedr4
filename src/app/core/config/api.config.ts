@@ -1,10 +1,14 @@
 /**
- * URL base de la API de NestJS. En desarrollo corre en localhost:3000 (ver
- * src/main.ts del backend — CORS sólo está habilitado para
- * http://localhost:4200, así que corre `ng serve` en el puerto default).
- *
- * TODO: mover esto a environment.ts / environment.prod.ts cuando el
- * backend se despliegue a un servidor real, para no tener la URL de
- * producción hardcodeada aquí.
+ * URL base de la API de NestJS:
+ * - En desarrollo local (localhost / 127.0.0.1): apunta a http://localhost:3000
+ * - En la nube (Vercel): apunta automáticamente a tu propio Backend en Render
+ *   (100% independiente del repositorio original).
  */
-export const API_URL = 'http://localhost:3000';
+export const PROD_API_URL = 'https://xml-flow-backend-saavedr4.onrender.com';
+
+export const API_URL =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:3000'
+    : PROD_API_URL;

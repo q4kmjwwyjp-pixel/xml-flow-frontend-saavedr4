@@ -24,9 +24,9 @@
     <section class="filter-panel">
         <div class="filter-group">
             <div class="input-container">
-                <label for="buscar">🔍 Buscar Folio, N° Proveedor o RFC</label>
+                <label for="buscar">🔍 Buscar Folio, Contrarrecibo, N° Proveedor o RFC</label>
                 <input id="buscar" type="text" [(ngModel)]="busquedaTexto" (input)="aplicarFiltros()"
-                    placeholder="Escribe folio, N° de proveedor, nombre o RFC..." class="form-control" />
+                    placeholder="Escribe PRUEBAS, folio, contrarrecibo, N° de proveedor o RFC..." class="form-control" />
             </div>
 
             <div class="input-container calendar-filter">
@@ -86,7 +86,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>📄 Folio</th>
+                        <th>📄 Folio / Contrarrecibo</th>
                         <th>🏢 Proveedor</th>
                         <th>💳 Condición</th>
                         <th>⏳ Crédito</th>
@@ -98,8 +98,26 @@
                 </thead>
                 <tbody>
                     @for (f of facturasFiltradas; track f.uuid || f.folio) {
-                    <tr>
-                        <td class="cell-folio"><strong>{{ f.folio }}</strong></td>
+                    <tr [class.bg-amber-50/40]="(f.folio || '').startsWith('PRUEBAS') || (f.nombreProveedor || '').includes('PRUEBAS')">
+                        <td class="cell-folio">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <strong>{{ f.folio }}</strong>
+                                    @if ((f.folio || '').startsWith('PRUEBAS') || (f.nombreProveedor || '').includes('PRUEBAS')) {
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300">
+                                            🧪 PRUEBAS
+                                        </span>
+                                    }
+                                </div>
+                                @if (f.folioContrarrecibo) {
+                                    <span class="inline-flex items-center w-fit px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                        🧾 CR: #{{ f.folioContrarrecibo }}
+                                    </span>
+                                } @else {
+                                    <span class="text-[11px] text-slate-400">Sin contrarrecibo</span>
+                                }
+                            </div>
+                        </td>
                         <td>
                             <div class="provider-info">
                                 <span class="provider-name">{{ f.nombreProveedor }}</span>
@@ -120,8 +138,10 @@
                                 }
                             </div>
                         </td>
-                        <td class="cell-amount">{{ (f.total || 0).toLocaleString('es-MX', { style: 'currency', currency:
-                            'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+                        <td class="cell-amount">
+                            {{ (f.total || 0).toLocaleString('es-MX', { style: 'currency', currency: f.moneda === 'USD' ? 'USD' : 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                            <span class="text-xs text-slate-500 font-mono">{{ f.moneda || 'MXN' }}</span>
+                        </td>
                         <td>
                             <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
                                 {{

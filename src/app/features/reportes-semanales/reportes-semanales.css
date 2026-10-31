@@ -9,8 +9,6 @@
 .btn-outline:hover, .btn-refresh:hover:not(:disabled) { background: #e2e8f0; color: #0f172a; }
 .btn-excel { background: #15803d; color: #fff; }
 .btn-excel:hover:not(:disabled) { background: #166534; }
-.btn-print { background: #1d4ed8; color: #fff; }
-.btn-print:hover:not(:disabled) { background: #1e40af; }
 .btn-clear { background: #f1f5f9; color: #475569; border-color: #cbd5e1; white-space: nowrap; }
 .btn-clear:hover { background: #e2e8f0; color: #0f172a; }
 
@@ -32,106 +30,4 @@
 .form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
 .search-row { display: flex; gap: 8px; }
 
-.reporte-documento { background: #fff; border-radius: 10px; padding: 32px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(15,23,42,.06); }
-.membrete-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 3px double #0f172a; }
-.membrete-badge { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: #0f172a; color: #fff; padding: 4px 10px; border-radius: 4px; margin-bottom: 8px; }
-.empresa-nombre { font-size: 1.65rem; font-weight: 800; margin: 0 0 6px; color: #0f172a; }
-.empresa-datos-fiscales { margin: 0; font-size: .88rem; color: #334155; }
-.empresa-datos-fiscales .sep { margin: 0 8px; color: #94a3b8; }
-.membrete-meta { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; min-width: 290px; display: flex; flex-direction: column; gap: 5px; }
-.meta-row { display: flex; justify-content: space-between; gap: 12px; font-size: .82rem; }
-.meta-label { font-weight: 600; color: #475569; }
-.meta-value { font-weight: 700; color: #0f172a; text-align: right; }
-.highlight-period { color: #1d4ed8; }
-
-.report-section { margin-bottom: 28px; }
-.section-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; }
-.section-heading h2 { font-size: 1.08rem; font-weight: 800; margin: 0; color: #0f172a; text-transform: uppercase; }
-.section-note { font-size: .8rem; color: #64748b; font-weight: 600; }
-.kpi-grid-fiscal { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
-.kpi-box { border-radius: 8px; padding: 14px 16px; border: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column; gap: 4px; border-left-width: 4px; }
-.kpi-neutral { border-left-color: #475569; }
-.kpi-blue { border-left-color: #2563eb; }
-.kpi-indigo { border-left-color: #6366f1; }
-.kpi-dark { border-left-color: #0f172a; background: #0f172a; color: #fff; }
-.kpi-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; color: #475569; }
-.kpi-dark .kpi-label { color: #cbd5e1; }
-.kpi-number { font-size: 1.38rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
-.kpi-dark .kpi-number { color: #fff; }
-.kpi-foot { font-size: .74rem; color: #64748b; }
-.kpi-dark .kpi-foot { color: #94a3b8; }
-
-.kpi-grid-flujo { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-.flujo-card { border-radius: 8px; padding: 14px 16px; border: 1px solid transparent; }
-.flujo-pagado { background: #f0fdf4; border-color: #bbf7d0; color: #14532d; }
-.flujo-pendiente { background: #fffbeb; border-color: #fde68a; color: #78350f; }
-.flujo-vencido { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
-.flujo-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.flujo-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.dot-green { background: #16a34a; }
-.dot-amber { background: #d97706; }
-.dot-red { background: #dc2626; }
-.flujo-title { font-size: .78rem; font-weight: 800; text-transform: uppercase; }
-.flujo-amount { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; margin-bottom: 2px; }
-.flujo-meta { font-size: .76rem; opacity: .85; font-weight: 600; }
-
-.table-wrapper { overflow: auto; max-inline-size: 100%; max-block-size: min(560px, 78vh); container-type: inline-size; border: 1px solid #cbd5e1; border-radius: 6px; }
-.report-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; text-align: left; }
-.report-table thead { position: sticky; inset-block-start: 0; z-index: 2; }
-.report-table th { background: #e2e8f0; color: #0f172a; font-weight: 700; padding: 10px; border-bottom: 2px solid #94a3b8; font-size: .76rem; text-transform: uppercase; }
-.report-table tbody th { background: #fff; text-transform: none; font-size: .82rem; border-bottom: 1px solid #e2e8f0; padding: 9px 10px; }
-.report-table td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; color: #1e293b; }
-.report-table tbody tr:hover td, .report-table tbody tr:hover th { background: #f8fafc; }
-.highlight-col { background: #eff6ff !important; color: #1e3a8a !important; }
-.totals-row td { background: #f1f5f9; border-top: 2px solid #0f172a; border-bottom: none; padding: 11px 10px; font-size: .84rem; color: #0f172a; }
-.total-grand-cell { background: #dbeafe !important; color: #1e3a8a !important; font-size: .9rem !important; }
-
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
-.uuid-cell { font-size: .72rem; color: #334155; max-width: 190px; word-break: break-all; }
-.cell-stack { display: flex; flex-direction: column; gap: 2px; }
-.sub-text { font-size: .72rem; color: #64748b; }
-.text-small { font-size: .76rem; }
-.text-right { text-align: right !important; }
-.text-center { text-align: center !important; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
-.text-success { color: #15803d !important; }
-.whitespace-nowrap { white-space: nowrap; }
-.folio-link { color: #1d4ed8; text-decoration: none; }
-.folio-link:hover { text-decoration: underline; }
-
-.method-pill, .plazo-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: .72rem; font-weight: 700; width: fit-content; white-space: nowrap; }
-.method-pill.ppd { background: #e0f2fe; color: #0369a1; }
-.method-pill.pue, .plazo-tiempo { background: #f1f5f9; color: #334155; }
-.plazo-saldada, .estado-pill.pagado { background: #dcfce7; color: #15803d; }
-.plazo-proximo, .estado-pill.pendiente { background: #fef3c7; color: #b45309; }
-.plazo-hoy { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
-.plazo-vencida, .estado-pill.vencido { background: #fee2e2; color: #b91c1c; }
-.estado-pill { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: .72rem; font-weight: 800; }
-.empty-row { text-align: center; padding: 28px !important; color: #64748b; font-style: italic; }
-
-.firmas-section { margin-top: 38px; padding-top: 20px; border-top: 2px dashed #cbd5e1; break-inside: avoid; }
-.firmas-intro { text-align: center; font-size: .78rem; font-weight: 600; color: #475569; margin-bottom: 36px; text-transform: uppercase; }
-.firmas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 24px; }
-@media (max-width: 680px) { .firmas-grid { grid-template-columns: 1fr; gap: 28px; } }
-.firma-bloque { text-align: center; padding: 0 12px; }
-.firma-linea { border-bottom: 1.5px solid #0f172a; height: 36px; margin-bottom: 8px; }
-.firma-cargo { margin: 0; font-size: .85rem; font-weight: 800; color: #0f172a; }
-.firma-sub { margin: 2px 0 0; font-size: .75rem; color: #64748b; }
-
 .error-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 14px 18px; border-radius: 8px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-
-@media print {
-  @page { size: landscape; margin: 10mm; }
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .no-print { display: none !important; }
-  .reporte-page-wrapper { padding: 0 !important; background: #fff !important; min-height: auto !important; }
-  .reporte-documento { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
-  .table-wrapper { max-block-size: none !important; overflow: visible !important; border: 1px solid #94a3b8 !important; }
-  .report-table thead, .report-table tbody th { position: static !important; }
-  .report-table th, .report-table td { padding: 6px !important; font-size: .72rem !important; }
-  .uuid-cell { font-size: .65rem !important; max-width: none !important; }
-  .folio-link { color: #0f172a !important; text-decoration: none !important; }
-  tr, .kpi-box, .flujo-card, .firmas-section { page-break-inside: avoid !important; break-inside: avoid !important; }
-  .firmas-grid { grid-template-columns: repeat(3, 1fr) !important; }
-}

@@ -7,7 +7,12 @@ import {
   ProveedorService,
   Proveedor,
 } from '../../core/services/proveedor.service';
-import { obtenerDatosCatalogoPorRfc } from '../../core/utils/catalogo-proveedores';
+import {
+  CATALOGO_REGIMENES_FISCALES,
+  REGIMENES_FISCALES,
+  RegimenFiscalItem,
+  normalizarClaveRegimenFiscal,
+} from '../../core/utils/catalogos-sat';
 
 @Component({
   selector: 'app-proveedores',
@@ -18,6 +23,8 @@ import { obtenerDatosCatalogoPorRfc } from '../../core/utils/catalogo-proveedore
 export class Proveedores implements OnInit {
   public proveedorService = inject(ProveedorService);
   private router = inject(Router);
+
+  readonly regimenesFiscales: RegimenFiscalItem[] = CATALOGO_REGIMENES_FISCALES;
 
   mostrarModal = signal<boolean>(false);
   mostrarModalEliminar = signal<boolean>(false);
@@ -52,21 +59,36 @@ export class Proveedores implements OnInit {
     this.paginaActual.set(1);
   }
 
+  formatearRegimen(valor?: string): string {
+    const clave =
+      normalizarClaveRegimenFiscal(valor) || (valor || '').trim() || '601';
+    const descripcion = REGIMENES_FISCALES[clave];
+    return descripcion ? `${clave} (${descripcion})` : clave;
+  }
+
+  esPersonaFisica(): boolean {
+    const rfcLimpio = (this.proveedorForm.rfc || '').trim().toUpperCase();
+    const reg = normalizarClaveRegimenFiscal(this.proveedorForm.regimenFiscal);
+    const regimenesFisica = new Set([
+      '605',
+      '606',
+      '607',
+      '608',
+      '611',
+      '612',
+      '614',
+      '615',
+      '616',
+      '621',
+      '625',
+    ]);
+    return rfcLimpio.length === 13 || regimenesFisica.has(reg);
+  }
+
   onRfcInputChange(valor: string): void {
     this.proveedorForm.rfc = valor;
-    if (!this.modoEdicion()) {
-      const encontrado = obtenerDatosCatalogoPorRfc(valor);
-      if (encontrado) {
-        if (!this.proveedorForm.codigoProveedor) {
-          this.proveedorForm.codigoProveedor = encontrado.codigoProveedor;
-        }
-        if (!this.proveedorForm.nombre) {
-          this.proveedorForm.nombre = encontrado.nombre;
-        }
-        if (!this.proveedorForm.regimenFiscal) {
-          this.proveedorForm.regimenFiscal = encontrado.regimenFiscal;
-        }
-      }
+    if (this.mensajeError()) {
+      this.mensajeError.set(null);
     }
   }
 
@@ -85,6 +107,10 @@ export class Proveedores implements OnInit {
   abrirModalEditar(prov: Proveedor): void {
     this.modoEdicion.set(true);
     this.mensajeError.set(null);
+    const claveNormalizada =
+      normalizarClaveRegimenFiscal(prov.regimenFiscal) ||
+      (prov.rfc?.trim().length === 12 ? '601' : '612');
+
     this.proveedorForm = {
       codigoProveedor:
         prov.codigoProveedor && prov.codigoProveedor !== 'S/N'
@@ -92,7 +118,7 @@ export class Proveedores implements OnInit {
           : '',
       rfc: prov.rfc,
       nombre: prov.nombre,
-      regimenFiscal: prov.regimenFiscal || '',
+      regimenFiscal: claveNormalizada,
     };
     this.mostrarModal.set(true);
   }
@@ -143,25 +169,70 @@ export class Proveedores implements OnInit {
     );
   }
 
+  /**
+   * Valida que el nombre/razón social cumpla con el formato "Apellidos Nombre"
+   * (mínimo 2 palabras para Apellidos y Nombre, normalizado en mayúsculas).
+   */
+  validarFormatoApellidosNombre(nombre: string, rfc: string): string | null {
+    const palabras = nombre.split(' ').filter((p) => p.length > 0);
+    if (palabras.length < 2) {
+      return 'Debes ingresar el nombre bajo el formato "Apellidos Nombre" (mínimo un apellido y un nombre, ej. GARZA CARLOS MARIA DE JESUS).';
+    }
+    if (rfc.length === 13 && palabras.length < 2) {
+      return 'Para Persona Física el formato obligatorio es "Apellidos Nombre" (ej. QUIROGA MIRELES ALBERTO).';
+    }
+    return null;
+  }
+
   guardarProveedor(): void {
     this.mensajeError.set(null);
 
-    const codigoLimpio = (this.proveedorForm.codigoProveedor || '').trim();
+    const codigoLimpio = (this.proveedorForm.codigoProveedor || '')
+      .trim()
+      .replace(/^#+/, '')
+      .trim();
     const rfcLimpio = this.proveedorForm.rfc.trim().toUpperCase();
-    const nombreLimpio = this.proveedorForm.nombre.trim();
-    const regimenLimpio =
-      this.proveedorForm.regimenFiscal.trim() ||
-      (rfcLimpio.length === 12 ? '601' : '612');
+    const nombreLimpio = this.proveedorForm.nombre
+      .replace(/,/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toUpperCase();
+    const regimenLimpio = normalizarClaveRegimenFiscal(
+      this.proveedorForm.regimenFiscal
+    );
 
-    if (!rfcLimpio || !nombreLimpio) {
+    if (!rfcLimpio || !nombreLimpio || !regimenLimpio) {
       this.mensajeError.set(
-        'Por favor completa los campos obligatorios (RFC y Razón Social).'
+        'Por favor completa los campos obligatorios (RFC, Apellidos Nombre / Razón Social y Régimen Fiscal).'
       );
       return;
     }
 
     if (!this.validarRFC(rfcLimpio)) {
       this.mensajeError.set('El formato del RFC no es válido.');
+      return;
+    }
+
+    const errorFormatoNombre = this.validarFormatoApellidosNombre(
+      nombreLimpio,
+      rfcLimpio
+    );
+    if (errorFormatoNombre) {
+      this.mensajeError.set(errorFormatoNombre);
+      return;
+    }
+
+    const errorDuplicado = this.proveedorService.validarDuplicados(
+      {
+        codigoProveedor: codigoLimpio,
+        rfc: rfcLimpio,
+        nombre: nombreLimpio,
+      },
+      this.modoEdicion()
+    );
+
+    if (errorDuplicado) {
+      this.mensajeError.set(errorDuplicado);
       return;
     }
 
@@ -179,8 +250,12 @@ export class Proveedores implements OnInit {
           },
           error: (err) => {
             console.error('Error al actualizar proveedor:', err);
+            const msg =
+              err?.error?.message ||
+              err?.message ||
+              'Error al actualizar la información del proveedor.';
             this.mensajeError.set(
-              'Error al actualizar la información del proveedor.'
+              Array.isArray(msg) ? msg.join(' ') : String(msg)
             );
           },
         });
@@ -199,8 +274,12 @@ export class Proveedores implements OnInit {
           },
           error: (err) => {
             console.error('Error al crear proveedor:', err);
+            const msg =
+              err?.error?.message ||
+              err?.message ||
+              'Error al registrar el proveedor. Verifica si el Código, RFC o Razón Social ya están ocupados.';
             this.mensajeError.set(
-              'Error al registrar el proveedor. Verifica si el RFC ya existe.'
+              Array.isArray(msg) ? msg.join(' ') : String(msg)
             );
           },
         });
@@ -261,7 +340,7 @@ export class Proveedores implements OnInit {
       if (this.mensajeExito() === msg) {
         this.mensajeExito.set(null);
       }
-    }, 4500);
+    }, 5500);
   }
 
   async onArchivoExcelSeleccionado(event: Event): Promise<void> {
@@ -291,15 +370,27 @@ export class Proveedores implements OnInit {
       }> = [];
 
       for (const row of rows) {
-        if (!Array.isArray(row) || row.length < 4) continue;
-        const clave = String(row[0] ?? '').trim();
+        if (!Array.isArray(row) || row.length < 3) continue;
+        const clave = String(row[0] ?? '')
+          .trim()
+          .replace(/^#+/, '')
+          .trim();
         const rfc = String(row[1] ?? '')
           .trim()
           .toUpperCase()
           .replace(/[\s-]/g, '');
-        const nombre = String(row[3] ?? '').trim();
+        const nombre = String(row[3] || row[2] || '')
+          .trim()
+          .replace(/\s+/g, ' ')
+          .toUpperCase();
 
         if (!clave || clave.toLowerCase() === 'clave') continue;
+        if (
+          !nombre ||
+          nombre.toLowerCase().includes('razon social') ||
+          nombre.toLowerCase().includes('razón social')
+        )
+          continue;
         if (rfc.length !== 12 && rfc.length !== 13) continue;
         if (
           rfc.startsWith('XEXX') ||
@@ -318,11 +409,21 @@ export class Proveedores implements OnInit {
 
       if (importados.length > 0) {
         this.proveedorService.importarProveedoresLote(importados).subscribe({
-          next: () => {
+          next: (res) => {
             this.importandoArchivo.set(false);
-            this.mostrarMensajeTemporal(
-              `Se sincronizaron ${importados.length.toLocaleString('es-MX')} proveedores desde el archivo con su Número de Proveedor (Clave).`
-            );
+            if (res.nuevos > 0 && res.omitidos > 0) {
+              this.mostrarMensajeTemporal(
+                `Se agregaron ${res.nuevos.toLocaleString('es-MX')} nuevos proveedores. Se omitieron ${res.omitidos.toLocaleString('es-MX')} que ya estaban registrados para evitar duplicados.`
+              );
+            } else if (res.nuevos > 0) {
+              this.mostrarMensajeTemporal(
+                `Se agregaron ${res.nuevos.toLocaleString('es-MX')} nuevos proveedores correctamente.`
+              );
+            } else {
+              this.mostrarMensajeTemporal(
+                `No se generaron duplicados: los ${res.omitidos.toLocaleString('es-MX')} proveedores del archivo Excel ya estaban dados de alta.`
+              );
+            }
           },
           error: () => {
             this.importandoArchivo.set(false);
@@ -331,7 +432,7 @@ export class Proveedores implements OnInit {
       } else {
         this.importandoArchivo.set(false);
         this.mostrarMensajeTemporal(
-          `El catálogo de proveedores (${this.proveedorService.proveedores().length.toLocaleString('es-MX')} registros) ya está activo y vinculado.`
+          `El catálogo de proveedores (${this.proveedorService.proveedores().length.toLocaleString('es-MX')} registros) ya está activo y sin duplicados.`
         );
       }
     } catch {

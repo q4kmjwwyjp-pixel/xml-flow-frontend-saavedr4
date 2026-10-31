@@ -1,11 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, tap, catchError, map } from 'rxjs';
+import { Observable, of, tap, catchError, map, throwError } from 'rxjs';
 import {
   CATALOGO_PROVEEDORES,
   obtenerDatosCatalogoPorRfc,
   resolverCodigoProveedor,
 } from '../utils/catalogo-proveedores';
+import { API_URL } from '../config/api.config';
 
 export interface Proveedor {
   id?: number;
@@ -24,10 +25,84 @@ const STORAGE_DELETED_KEY = 'xmlflow_proveedores_deleted_v1';
 })
 export class ProveedorService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'https://xml-flow-back-end.onrender.com/proveedor';
+  private readonly apiUrl = `${API_URL}/proveedor`;
 
   public proveedores = signal<Proveedor[]>([]);
   public cargando = signal<boolean>(false);
+
+  private normalizarTexto(valor?: string | null): string {
+    return (valor || '').trim().replace(/\s+/g, ' ').toUpperCase();
+  }
+
+  private normalizarCodigo(valor?: string | null): string {
+    const limpio = (valor || '').trim().replace(/^#+/, '').trim().toUpperCase();
+    return limpio === 'S/N' ? '' : limpio;
+  }
+
+  public validarDuplicados(
+    datos: {
+      codigoProveedor?: string;
+      rfc: string;
+      nombre: string;
+    },
+    modoEdicion = false
+  ): string | null {
+    const listaActual =
+      this.proveedores().length > 0
+        ? this.proveedores()
+        : this.fusionarConCatalogo([]);
+
+    const codigoInput = (datos.codigoProveedor || '')
+      .trim()
+      .replace(/^#+/, '')
+      .trim();
+    const codigoNorm = this.normalizarCodigo(codigoInput);
+    const rfcInput = (datos.rfc || '').trim().toUpperCase();
+    const rfcNorm = this.normalizarTexto(rfcInput);
+    const nombreInput = (datos.nombre || '').trim().replace(/\s+/g, ' ');
+    const nombreNorm = this.normalizarTexto(nombreInput);
+
+    const candidatos = modoEdicion
+      ? listaActual.filter((p) => this.normalizarTexto(p.rfc) !== rfcNorm)
+      : listaActual;
+
+    const errores: string[] = [];
+
+    if (codigoNorm) {
+      const dupCodigo = candidatos.find(
+        (p) => this.normalizarCodigo(p.codigoProveedor) === codigoNorm
+      );
+      if (dupCodigo) {
+        errores.push(
+          `El N° de Proveedor (Clave) "${codigoInput}" ya está ocupado por "${dupCodigo.nombre}".`
+        );
+      }
+    }
+
+    if (!modoEdicion && rfcNorm) {
+      const dupRfc = candidatos.find(
+        (p) => this.normalizarTexto(p.rfc) === rfcNorm
+      );
+      if (dupRfc) {
+        errores.push(
+          `El RFC "${rfcInput}" ya está registrado (${dupRfc.nombre}).`
+        );
+      }
+    }
+
+    if (nombreNorm) {
+      const dupNombre = candidatos.find(
+        (p) => this.normalizarTexto(p.nombre) === nombreNorm
+      );
+      if (dupNombre) {
+        errores.push(
+          `La Razón Social "${nombreInput}" ya está registrada (RFC: ${dupNombre.rfc}).`
+        );
+      }
+    }
+
+    return errores.length > 0 ? errores.join(' ') : null;
+  }
 
   private leerOverridesLocales(): Record<string, Proveedor> {
     if (typeof window === 'undefined' || !window.localStorage) return {};
@@ -44,6 +119,17 @@ export class ProveedorService {
     try {
       const actual = this.leerOverridesLocales();
       actual[prov.rfc.toUpperCase()] = prov;
+      window.localStorage.setItem(STORAGE_OVERRIDES_KEY, JSON.stringify(actual));
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  private eliminarOverrideLocal(rfc: string): void {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      const actual = this.leerOverridesLocales();
+      delete actual[rfc.toUpperCase()];
       window.localStorage.setItem(STORAGE_OVERRIDES_KEY, JSON.stringify(actual));
     } catch {
       // ignore storage errors
@@ -149,7 +235,28 @@ export class ProveedorService {
       });
     }
 
-    return Array.from(mapa.values()).sort((a, b) => {
+    // 4. Deduplicar por Código de Proveedor y Razón Social para evitar registros repetidos
+    const codigosVistos = new Set<string>();
+    const nombresVistos = new Set<string>();
+    const unicos: Proveedor[] = [];
+
+    for (const p of mapa.values()) {
+      const codNorm = this.normalizarCodigo(p.codigoProveedor);
+      const nomNorm = this.normalizarTexto(p.nombre);
+
+      if (
+        (codNorm && codigosVistos.has(codNorm)) ||
+        (nomNorm && nombresVistos.has(nomNorm))
+      ) {
+        continue;
+      }
+
+      if (codNorm) codigosVistos.add(codNorm);
+      if (nomNorm) nombresVistos.add(nomNorm);
+      unicos.push(p);
+    }
+
+    return unicos.sort((a, b) => {
       const numA = Number(a.codigoProveedor);
       const numB = Number(b.codigoProveedor);
       const validA =
@@ -192,28 +299,41 @@ export class ProveedorService {
     nombre: string;
     regimenFiscal: string;
   }): Observable<Proveedor> {
+    const conflicto = this.validarDuplicados(nuevoProveedor, false);
+    if (conflicto) {
+      return throwError(() => new Error(conflicto));
+    }
+
     const rfcUpper = nuevoProveedor.rfc.trim().toUpperCase();
-    const codigo = resolverCodigoProveedor(
-      rfcUpper,
-      nuevoProveedor.codigoProveedor
-    );
+    const codigoLimpio = (nuevoProveedor.codigoProveedor || '')
+      .trim()
+      .replace(/^#+/, '')
+      .trim();
+    const codigo = codigoLimpio || 'S/N';
     const payload = {
       ...nuevoProveedor,
       rfc: rfcUpper,
+      nombre: nuevoProveedor.nombre.trim().replace(/\s+/g, ' '),
       codigoProveedor: codigo !== 'S/N' ? codigo : undefined,
     };
 
     this.desmarcarEliminadoLocal(rfcUpper);
     this.guardarOverrideLocal({
       rfc: rfcUpper,
-      nombre: nuevoProveedor.nombre.trim(),
-      regimenFiscal: nuevoProveedor.regimenFiscal.trim() || (rfcUpper.length === 12 ? '601' : '612'),
+      nombre: payload.nombre,
+      regimenFiscal:
+        nuevoProveedor.regimenFiscal.trim() ||
+        (rfcUpper.length === 12 ? '601' : '612'),
       codigoProveedor: codigo,
     });
 
     return this.http.post<Proveedor>(this.apiUrl, payload).pipe(
       tap(() => this.obtenerProveedores().subscribe()),
-      catchError(() => {
+      catchError((err) => {
+        if (err?.status === 409 || err?.status === 400) {
+          this.eliminarOverrideLocal(rfcUpper);
+          return throwError(() => err);
+        }
         this.obtenerProveedores().subscribe();
         return of(payload as Proveedor);
       })
@@ -235,16 +355,37 @@ export class ProveedorService {
 
     const actualizadoLocal: Proveedor = {
       rfc: rfcUpper,
-      nombre: datosActualizados.nombre?.trim() || existente?.nombre || '',
+      nombre:
+        datosActualizados.nombre?.trim().replace(/\s+/g, ' ') ||
+        existente?.nombre ||
+        '',
       regimenFiscal:
         datosActualizados.regimenFiscal?.trim() ||
         existente?.regimenFiscal ||
         (rfcUpper.length === 12 ? '601' : '612'),
       codigoProveedor:
-        datosActualizados.codigoProveedor?.trim() ||
+        datosActualizados.codigoProveedor
+          ?.trim()
+          .replace(/^#+/, '')
+          .trim() ||
         existente?.codigoProveedor ||
         'S/N',
     };
+
+    const conflicto = this.validarDuplicados(
+      {
+        codigoProveedor: actualizadoLocal.codigoProveedor,
+        rfc: rfcUpper,
+        nombre: actualizadoLocal.nombre,
+      },
+      true
+    );
+    if (conflicto) {
+      return throwError(() => new Error(conflicto));
+    }
+
+    const overridesPrevios = this.leerOverridesLocales();
+    const overrideAnterior = overridesPrevios[rfcUpper];
 
     this.guardarOverrideLocal(actualizadoLocal);
 
@@ -259,7 +400,15 @@ export class ProveedorService {
       })
       .pipe(
         tap(() => this.obtenerProveedores().subscribe()),
-        catchError(() => {
+        catchError((err) => {
+          if (err?.status === 409 || err?.status === 400) {
+            if (overrideAnterior) {
+              this.guardarOverrideLocal(overrideAnterior);
+            } else {
+              this.eliminarOverrideLocal(rfcUpper);
+            }
+            return throwError(() => err);
+          }
           this.obtenerProveedores().subscribe();
           return of(actualizadoLocal);
         })
@@ -287,28 +436,102 @@ export class ProveedorService {
       nombre: string;
       regimenFiscal: string;
     }>
-  ): Observable<any> {
+  ): Observable<{
+    nuevos: number;
+    omitidos: number;
+    totalArchivo: number;
+  }> {
+    const listaActual =
+      this.proveedores().length > 0
+        ? this.proveedores()
+        : this.fusionarConCatalogo([]);
+
+    const codigosOcupados = new Set<string>();
+    const rfcsOcupados = new Set<string>();
+    const nombresOcupados = new Set<string>();
+
+    for (const ex of listaActual) {
+      const cod = this.normalizarCodigo(ex.codigoProveedor);
+      const rfc = this.normalizarTexto(ex.rfc);
+      const nom = this.normalizarTexto(ex.nombre);
+      if (cod) codigosOcupados.add(cod);
+      if (rfc) rfcsOcupados.add(rfc);
+      if (nom) nombresOcupados.add(nom);
+    }
+
+    const nuevosParaInsertar: Array<{
+      codigoProveedor: string;
+      rfc: string;
+      nombre: string;
+      regimenFiscal: string;
+    }> = [];
+    let omitidos = 0;
+
     for (const item of lote) {
       if (!item.rfc || !item.nombre) continue;
+      const codigoLimpio = (item.codigoProveedor || '')
+        .trim()
+        .replace(/^#+/, '')
+        .trim();
       const rfcUpper = item.rfc.trim().toUpperCase();
+      const nombreLimpio = item.nombre.trim().replace(/\s+/g, ' ');
+      const regimen =
+        item.regimenFiscal?.trim() ||
+        (rfcUpper.length === 12 ? '601' : '612');
+
+      const codNorm = this.normalizarCodigo(codigoLimpio);
+      const rfcNorm = this.normalizarTexto(rfcUpper);
+      const nomNorm = this.normalizarTexto(nombreLimpio);
+
+      // Si ya estaba dado de alta (por Código, RFC o Razón Social), se omite para no duplicar
+      if (
+        (codNorm && codigosOcupados.has(codNorm)) ||
+        rfcsOcupados.has(rfcNorm) ||
+        nombresOcupados.has(nomNorm)
+      ) {
+        omitidos++;
+        continue;
+      }
+
+      if (codNorm) codigosOcupados.add(codNorm);
+      rfcsOcupados.add(rfcNorm);
+      nombresOcupados.add(nomNorm);
+
       this.desmarcarEliminadoLocal(rfcUpper);
       this.guardarOverrideLocal({
-        codigoProveedor: item.codigoProveedor?.trim() || 'S/N',
+        codigoProveedor: codigoLimpio || 'S/N',
         rfc: rfcUpper,
-        nombre: item.nombre.trim(),
-        regimenFiscal:
-          item.regimenFiscal?.trim() ||
-          (rfcUpper.length === 12 ? '601' : '612'),
+        nombre: nombreLimpio,
+        regimenFiscal: regimen,
+      });
+
+      nuevosParaInsertar.push({
+        codigoProveedor: codigoLimpio,
+        rfc: rfcUpper,
+        nombre: nombreLimpio,
+        regimenFiscal: regimen,
       });
     }
 
+    const resultado = {
+      nuevos: nuevosParaInsertar.length,
+      omitidos,
+      totalArchivo: lote.length,
+    };
+
+    if (nuevosParaInsertar.length === 0) {
+      this.obtenerProveedores().subscribe();
+      return of(resultado);
+    }
+
     return this.http
-      .post(`${this.apiUrl}/bulk`, { proveedores: lote })
+      .post(`${this.apiUrl}/bulk`, { proveedores: nuevosParaInsertar })
       .pipe(
         tap(() => this.obtenerProveedores().subscribe()),
+        map(() => resultado),
         catchError(() => {
           this.obtenerProveedores().subscribe();
-          return of({ procesados: lote.length });
+          return of(resultado);
         })
       );
   }
