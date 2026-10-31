@@ -20,6 +20,7 @@ export class AlertaExitoComponent implements OnInit {
 
   readonly resultado = this.cfdiService.resultadoActual;
 
+  folioContrarreciboInput = signal<string>('');
   fechaPagoInput = signal<string>('');
   diasCreditoInput = signal<number | null>(null);
   baseCalculo = signal<'revision' | 'emision'>('revision');
@@ -38,6 +39,7 @@ export class AlertaExitoComponent implements OnInit {
       this.diasCreditoInput.set(
         r.diasCredito && r.diasCredito > 0 ? r.diasCredito : null
       );
+      this.folioContrarreciboInput.set((r as any).folioContrarrecibo || '');
     }
   }
 
@@ -47,19 +49,18 @@ export class AlertaExitoComponent implements OnInit {
     return !cod || cod === 'S/N' || cod.startsWith('PRV-');
   }
 
+  onFolioContrarreciboChange(valor: string): void {
+    this.folioContrarreciboInput.set(valor);
+    this.mensajeGuardado.set(null);
+    this.errorGuardado.set(null);
+    this.cambiosSinGuardar.set(true);
+  }
+
   onFechaManualChange(nuevaFecha: string): void {
     this.fechaPagoInput.set(nuevaFecha);
     this.mensajeGuardado.set(null);
     this.errorGuardado.set(null);
     this.cambiosSinGuardar.set(true);
-
-    if (nuevaFecha) {
-      const base = this.obtenerFechaBase();
-      const destino = new Date(`${nuevaFecha}T12:00:00`);
-      const diffMs = destino.getTime() - base.getTime();
-      const diffDias = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
-      this.diasCreditoInput.set(diffDias);
-    }
   }
 
   onDiasCreditoChange(valor: number | string | null): void {
@@ -125,40 +126,44 @@ export class AlertaExitoComponent implements OnInit {
 
     const fecha = (this.fechaPagoInput() || '').trim() || null;
     const dias = this.diasCreditoInput();
+    const folioCR = (this.folioContrarreciboInput() || '').trim() || null;
 
-    this.facturaService
-      .actualizarProgramacionPago(r.uuid, {
-        fechaEstimadaPago: fecha,
-        diasCredito: dias,
-      })
-      .subscribe({
-        next: () => {
-          this.guardandoFecha.set(false);
-          this.cambiosSinGuardar.set(false);
-          this.cfdiService.resultadoActual.set({
-            ...r,
-            fechaEstimadaPago: fecha,
-            diasCredito: dias ?? 0,
-          });
-          this.mensajeGuardado.set(
-            fecha
-              ? `✅ Fecha estimada de pago actualizada al ${fecha}.`
-              : '✅ Fecha estimada de pago actualizada.'
-          );
-          if (navegarDespuesA) {
-            this.router.navigateByUrl(navegarDespuesA);
-          }
-        },
-        error: () => {
-          this.guardandoFecha.set(false);
-          this.errorGuardado.set(
-            'No se pudo actualizar la fecha en el servidor. Intenta de nuevo.'
-          );
-          if (navegarDespuesA) {
-            this.router.navigateByUrl(navegarDespuesA);
-          }
-        },
-      });
+    const payload: {
+      fechaEstimadaPago: string | null;
+      diasCredito?: number | null;
+      folioContrarrecibo?: string | null;
+    } = {
+      fechaEstimadaPago: fecha,
+      diasCredito: dias,
+    };
+    if (folioCR !== null) {
+      payload.folioContrarrecibo = folioCR;
+    }
+
+    this.facturaService.actualizarProgramacionPago(r.uuid, payload).subscribe({
+      next: () => {
+        this.guardandoFecha.set(false);
+        this.cambiosSinGuardar.set(false);
+        this.cfdiService.resultadoActual.set({
+          ...r,
+          fechaEstimadaPago: fecha,
+          diasCredito: dias ?? 0,
+        });
+        this.mensajeGuardado.set('✅ Datos de contrarrecibo y fecha de pago guardados.');
+        if (navegarDespuesA) {
+          this.router.navigateByUrl(navegarDespuesA);
+        }
+      },
+      error: () => {
+        this.guardandoFecha.set(false);
+        this.errorGuardado.set(
+          'No se pudo actualizar en el servidor. Intenta de nuevo.'
+        );
+        if (navegarDespuesA) {
+          this.router.navigateByUrl(navegarDespuesA);
+        }
+      },
+    });
   }
 
   irADashboard(): void {
