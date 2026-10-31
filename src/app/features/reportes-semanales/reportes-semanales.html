@@ -15,6 +15,34 @@
     </div>
 
     <div class="actions-right">
+      <span
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border"
+        [ngClass]="
+          authService.esAdmin()
+            ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+        ">
+        {{ authService.etiquetaUsuario() }}
+      </span>
+
+      @if (authService.esAdmin()) {
+        <button
+          type="button"
+          (click)="alternarVistaPruebas()"
+          class="px-3 py-2 rounded-lg text-xs font-bold border transition cursor-pointer"
+          [ngClass]="
+            authService.mostrarDatosPrueba()
+              ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+          ">
+          {{
+            authService.mostrarDatosPrueba()
+              ? '🧪 Pruebas: Visibles'
+              : '👁️ Vista como Daniela'
+          }}
+        </button>
+      }
+
       <button
         type="button"
         class="btn btn-refresh"

@@ -8,33 +8,42 @@ import { PagosProgramados } from './features/pagos-programados/pagos-programados
 import { DetalleFactura } from './features/detalle-factura/detalle-factura';
 import { ReportesSemanales } from './features/reportes-semanales/reportes-semanales';
 import { Proveedores } from './features/proveedores/proveedores.component';
-
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
-    path: 'reportes-semanales', component: ReportesSemanales
+    path: 'reportes-semanales',
+    component: ReportesSemanales,
+    canActivate: [authGuard],
   },
   {
-    path: 'pagos-programados', component: PagosProgramados
+    path: 'pagos-programados',
+    component: PagosProgramados,
+    canActivate: [authGuard],
   },
   {
-    path: 'pagos-programados/:uuid', component: DetalleFactura
+    path: 'pagos-programados/:uuid',
+    component: DetalleFactura,
+    canActivate: [authGuard],
   },
   {
-    path: "",
-    component: LoginComponent
+    path: '',
+    component: LoginComponent,
   },
   {
-    path: "rechazo",
-    component: AlertaRechazoComponent
+    path: 'rechazo',
+    component: AlertaRechazoComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'alerta-rechazo',
     component: AlertaRechazoComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'validacion-exitosa',
-    component: AlertaExitoComponent
+    component: AlertaExitoComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'exito',
@@ -42,24 +51,23 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
-    path: 'rechazo',
-    redirectTo: 'alerta-rechazo',
-    pathMatch: 'full',
+    path: 'upload',
+    component: UploadPage,
+    canActivate: [authGuard],
   },
   {
-    path: "upload",
-    component: UploadPage
+    path: 'carga',
+    component: UploadPage,
+    canActivate: [authGuard],
   },
   {
-    path: "carga",
-    component: UploadPage
+    path: 'dashboard',
+    component: Dashboard,
+    canActivate: [authGuard],
   },
   {
-    path: "dashboard",
-    component: Dashboard
+    path: 'proveedores',
+    component: Proveedores,
+    canActivate: [authGuard],
   },
-  {
-    path: "proveedores",
-    component: Proveedores
-  }
 ];

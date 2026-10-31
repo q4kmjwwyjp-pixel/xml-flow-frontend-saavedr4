@@ -1,8 +1,12 @@
-// login.component.ts
 import { Component, OnDestroy, inject, signal } from '@angular/core';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, SesionUsuario } from '../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { LogoXmlFlowComponent } from '../../shared/components/logo-xml-flow/logo-xml-flow.component';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -33,7 +37,6 @@ export class LoginComponent implements OnDestroy {
       password: ['', [Validators.required]],
     });
 
-    // Limpiar el mensaje de error automáticamente en cuanto el usuario vuelva a escribir
     this.formSub = this.loginForm.valueChanges.subscribe(() => {
       if (this.mensajeError()) {
         this.mensajeError.set(null);
@@ -63,59 +66,90 @@ export class LoginComponent implements OnDestroy {
 
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
-      this.mensajeError.set('Por favor ingresa tu usuario y contraseña para continuar.');
+      this.mensajeError.set(
+        'Por favor ingresa tu usuario y contraseña para continuar.'
+      );
       return;
     }
 
     const usuarioRaw: string = this.loginForm.value.usuario ?? '';
     const password: string = this.loginForm.value.password ?? '';
     const usuario = usuarioRaw.trim();
+    const usuarioLower = usuario.toLowerCase();
 
     if (!usuario || !password) {
-      this.mensajeError.set('Por favor ingresa tu usuario y contraseña para continuar.');
+      this.mensajeError.set(
+        'Por favor ingresa tu usuario y contraseña para continuar.'
+      );
       return;
     }
 
     this.cargando.set(true);
     this.mensajeError.set(null);
 
-    // 1. Validación directa para credenciales de acceso rápido ("user" / "123")
-    if (usuario === 'user' && password === '123') {
+    // 1. Validación de las 2 cuentas oficiales: Admin y Daniela
+    const esCuentaAdmin =
+      (usuarioLower === 'admin' || usuarioLower === 'admin@xmlflow.com') &&
+      password === 'admin123';
+
+    const esCuentaDaniela =
+      (usuarioLower === 'daniela' || usuarioLower === 'daniela@xmlflow.com') &&
+      password === 'Dani4829';
+
+    if (esCuentaAdmin || esCuentaDaniela) {
+      const sesion: SesionUsuario = esCuentaAdmin
+        ? {
+            usuario: 'admin',
+            nombre: 'Administrador',
+            email: 'admin@xmlflow.com',
+            rol: 'admin',
+          }
+        : {
+            usuario: 'daniela',
+            nombre: 'Daniela',
+            email: 'daniela@xmlflow.com',
+            rol: 'operador',
+          };
+
+      // Despertar/validar también contra el backend en segundo plano
+      this.authService.login(sesion.email, password).subscribe({
+        error: () => {},
+      });
+
       this.loginTimer = setTimeout(() => {
         this.cargando.set(false);
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('xmlflow_usuario', 'user');
-        }
+        this.authService.guardarSesion(sesion);
         this.router.navigateByUrl('/dashboard');
-      }, 600);
+      }, 450);
       return;
     }
 
-    if (usuario === 'user' && password !== '123') {
-      this.loginTimer = setTimeout(() => {
-        this.cargando.set(false);
-        this.mensajeError.set('Usuario o contraseña incorrectos. Verifica tus datos e intenta nuevamente.');
-      }, 500);
-      return;
-    }
-
-    // 2. Respaldo contra el backend de autenticación para otros usuarios/correos registrados
+    // 2. Respaldo contra el backend
     this.authService.login(usuario, password).subscribe({
       next: (response) => {
         this.cargando.set(false);
         if (response) {
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('xmlflow_usuario', usuario);
-          }
+          const esAdmin =
+            response?.rol === 'admin' || usuarioLower.startsWith('admin');
+          const sesion: SesionUsuario = {
+            usuario: esAdmin ? 'admin' : 'daniela',
+            nombre: esAdmin ? 'Administrador' : 'Daniela',
+            email: esAdmin ? 'admin@xmlflow.com' : 'daniela@xmlflow.com',
+            rol: esAdmin ? 'admin' : 'operador',
+          };
+          this.authService.guardarSesion(sesion);
           this.router.navigateByUrl('/dashboard');
         } else {
-          this.mensajeError.set('Usuario o contraseña incorrectos. Verifica tus datos e intenta nuevamente.');
+          this.mensajeError.set(
+            'Usuario o contraseña incorrectos. Verifica tus datos e intenta nuevamente.'
+          );
         }
       },
-      error: (error) => {
-        console.error('Error al iniciar sesión:', error);
+      error: () => {
         this.cargando.set(false);
-        this.mensajeError.set('Usuario o contraseña incorrectos. Verifica tus datos e intenta nuevamente.');
+        this.mensajeError.set(
+          'Usuario o contraseña incorrectos. Verifica tus datos e intenta nuevamente.'
+        );
       },
     });
   }

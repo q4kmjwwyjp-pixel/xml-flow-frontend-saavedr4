@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import * as XLSXStyle from 'xlsx-js-style';
 import { FacturaService } from '../../core/services/factura.service';
+import { AuthService } from '../../core/services/auth.service';
 import { FacturaResumen } from '../../core/models/factura.model';
 import { calcularVencimiento } from '../../core/utils/factura-vencimiento';
 
@@ -52,6 +53,7 @@ export interface FilaVistaPrevia {
 })
 export class ReportesSemanales implements OnInit {
   private readonly facturaService = inject(FacturaService);
+  public readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   cargando = signal<boolean>(true);
@@ -136,6 +138,7 @@ export class ReportesSemanales implements OnInit {
   get proveedoresDisponibles(): { rfc: string; nombre: string }[] {
     const mapa = new Map<string, string>();
     for (const f of this.todasLasFacturas) {
+      if (!this.authService.debeMostrarFactura(f)) continue;
       if (f.rfcEmisor && !mapa.has(f.rfcEmisor)) {
         mapa.set(f.rfcEmisor, f.nombreProveedor || f.rfcEmisor);
       }
@@ -143,6 +146,11 @@ export class ReportesSemanales implements OnInit {
     return Array.from(mapa.entries())
       .map(([rfc, nombre]) => ({ rfc, nombre }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
+  alternarVistaPruebas(): void {
+    this.authService.toggleMostrarDatosPrueba();
+    this.aplicarFiltros();
   }
 
   /** Configura las fechas de inicio y fin según el botón rápido seleccionado */
@@ -258,6 +266,11 @@ export class ReportesSemanales implements OnInit {
     const texto = (this.busquedaTexto || '').trim().toLowerCase();
 
     this.facturasFiltradas = this.todasLasFacturas.filter((f) => {
+      // 0. Filtro de rol (Daniela no ve XMLs de prueba; Admin según su interruptor)
+      if (!this.authService.debeMostrarFactura(f)) {
+        return false;
+      }
+
       // 1. Filtro por Folio de Contrarrecibo asignado (o según el filtro activo)
       const tieneContrarrecibo =
         !!f.folioContrarrecibo && f.folioContrarrecibo.trim().length > 0;

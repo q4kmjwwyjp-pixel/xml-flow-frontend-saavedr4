@@ -7,6 +7,7 @@ import {
   ProveedorService,
   Proveedor,
 } from '../../core/services/proveedor.service';
+import { AuthService } from '../../core/services/auth.service';
 import {
   CATALOGO_REGIMENES_FISCALES,
   REGIMENES_FISCALES,
@@ -22,6 +23,7 @@ import {
 })
 export class Proveedores implements OnInit {
   public proveedorService = inject(ProveedorService);
+  public authService = inject(AuthService);
   private router = inject(Router);
 
   readonly regimenesFiscales: RegimenFiscalItem[] = CATALOGO_REGIMENES_FISCALES;
@@ -135,6 +137,7 @@ export class Proveedores implements OnInit {
   }
 
   confirmarEliminacion(prov: Proveedor): void {
+    if (!this.authService.esAdmin()) return;
     this.proveedorAEliminar.set(prov);
     this.mostrarModalEliminar.set(true);
   }
@@ -145,6 +148,7 @@ export class Proveedores implements OnInit {
   }
 
   ejecutarEliminacion(): void {
+    if (!this.authService.esAdmin()) return;
     const prov = this.proveedorAEliminar();
     if (!prov) return;
 
@@ -286,9 +290,22 @@ export class Proveedores implements OnInit {
     }
   }
 
+  alternarVistaPruebas(): void {
+    this.authService.toggleMostrarDatosPrueba();
+    this.paginaActual.set(1);
+  }
+
+  totalProveedoresVisibles(): number {
+    return this.proveedorService
+      .proveedores()
+      .filter((p) => this.authService.debeMostrarProveedor(p)).length;
+  }
+
   proveedoresFiltrados(): Proveedor[] {
     const busqueda = this.filtroBusqueda().trim().toLowerCase();
-    const lista = this.proveedorService.proveedores();
+    const lista = this.proveedorService
+      .proveedores()
+      .filter((p) => this.authService.debeMostrarProveedor(p));
     if (!busqueda) return lista;
 
     return lista.filter(

@@ -20,7 +20,37 @@
       </div>
     </div>
 
-    <div style="display: flex; align-items: center;">
+    <div class="flex flex-wrap items-center gap-2.5">
+      <!-- Gafete de usuario activo (Propuesta C) -->
+      <span
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold border shadow-2xs"
+        [ngClass]="
+          authService.esAdmin()
+            ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+        ">
+        {{ authService.etiquetaUsuario() }}
+      </span>
+
+      <!-- Interruptor Admin: Mostrar / Ocultar Pruebas (Propuesta B) -->
+      <button
+        *ngIf="authService.esAdmin()"
+        type="button"
+        (click)="alternarVistaPruebas()"
+        class="px-3.5 py-2 rounded-lg text-xs font-bold border transition cursor-pointer"
+        [ngClass]="
+          authService.mostrarDatosPrueba()
+            ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+        "
+        title="Alterna entre ver los XMLs de prueba o ver la pantalla limpia como la ve Daniela">
+        {{
+          authService.mostrarDatosPrueba()
+            ? '🧪 Pruebas: Visibles (Clic para Vista Daniela)'
+            : '👁️ Vista como Daniela (Pruebas Ocultas)'
+        }}
+      </button>
+
       <button
         type="button"
         (click)="cerrarSesion()"
@@ -95,7 +125,6 @@
                 </div>
               </td>
               <td>
-                <!-- Solo Crédito o Contado -->
                 <span class="badge-method" [ngClass]="f.metodoPago.toLowerCase()">
                   {{ f.metodoPago === 'PUE' ? 'Contado' : 'Crédito' }}
                 </span>
@@ -112,7 +141,6 @@
               </td>
               <td class="cell-amount">{{ f.total | currency:'MXN':'symbol':'1.2-2' }}</td>
               <td>
-                <!-- Se asigna la clase dinámicamente y se muestra el estado en mayúsculas -->
                 <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
                   {{ f.estado | uppercase }}
                 </span>
@@ -180,7 +208,6 @@
             <span class="val highlight">{{ facturaSeleccionada.total | currency:'MXN':'symbol':'1.2-2' }}</span>
           </div>
           
-          <!-- Checklist de Comprobaciones Fiscales -->
           <h4 class="section-subtitle">Comprobaciones Fiscales del CFDI:</h4>
           <div class="checks-list">
             <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales?.regimenValido">

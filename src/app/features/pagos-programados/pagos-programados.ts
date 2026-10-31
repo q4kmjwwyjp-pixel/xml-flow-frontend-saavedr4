@@ -10,6 +10,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FacturaService } from '../../core/services/factura.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   imports: [RouterLink, CommonModule, FormsModule],
@@ -19,6 +20,7 @@ import { FacturaService } from '../../core/services/factura.service';
 })
 export class PagosProgramados implements OnInit {
   private facturaService = inject(FacturaService);
+  public authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -87,8 +89,17 @@ export class PagosProgramados implements OnInit {
     this.router.navigateByUrl('/dashboard');
   }
 
+  alternarVistaPruebas(): void {
+    this.authService.toggleMostrarDatosPrueba();
+    this.aplicarFiltros();
+  }
+
   aplicarFiltros() {
     this.facturasFiltradas = this.todasLasFacturas.filter((f) => {
+      if (!this.authService.debeMostrarFactura(f)) {
+        return false;
+      }
+
       const coincideFecha =
         !this.fechaFiltroProgramacion ||
         f.fechaProgramacionPago === this.fechaFiltroProgramacion;
