@@ -168,6 +168,7 @@
                 <th class="py-3.5 px-6 font-semibold">RFC</th>
                 <th class="py-3.5 px-6 font-semibold">Razón Social / Nombre (Apellidos Nombre)</th>
                 <th class="py-3.5 px-6 font-semibold">Régimen Fiscal</th>
+                <th class="py-3.5 px-6 font-semibold text-center">Cond. Pag./Prov.</th>
                 <th class="py-3.5 px-6 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
@@ -182,6 +183,19 @@
                   <td class="py-4 px-6 font-mono font-medium text-slate-900">{{ prov.rfc }}</td>
                   <td class="py-4 px-6 font-semibold">{{ prov.nombre }}</td>
                   <td class="py-4 px-6">{{ formatearRegimen(prov.regimenFiscal) }}</td>
+                  <td class="py-4 px-6 text-center">
+                    @if (prov.diasCredito !== undefined && prov.diasCredito !== null) {
+                      <span
+                        class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold font-mono border"
+                        [ngClass]="prov.diasCredito > 0
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-slate-50 text-slate-500 border-slate-200'">
+                        {{ prov.diasCredito }} días
+                      </span>
+                    } @else {
+                      <span class="text-xs text-slate-400 font-semibold">Sin registro</span>
+                    }
+                  </td>
                   <td class="py-4 px-6 text-center">
                     <div class="flex items-center justify-center gap-2">
                       <!-- Botón Editar -->
@@ -208,7 +222,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="5" class="py-10 text-center text-slate-400">
+                  <td colspan="6" class="py-10 text-center text-slate-400">
                     No se encontraron proveedores que coincidan con la búsqueda.
                   </td>
                 </tr>

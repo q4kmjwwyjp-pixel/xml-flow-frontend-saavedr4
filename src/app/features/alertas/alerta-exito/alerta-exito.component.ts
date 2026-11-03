@@ -4,6 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CfdiValidationService } from '../../../core/services/cfdi-validation.service';
 import { FacturaService } from '../../../core/services/factura.service';
+import { obtenerDatosCatalogoPorRfc } from '../../../core/utils/catalogo-proveedores';
+import {
+  calcularDiasCredito,
+  diasCreditoDesdeXml,
+  diasCreditoEnListaProveedores,
+} from '../../../core/utils/dias-credito';
 import { LogoXmlFlowComponent } from '../../../shared/components/logo-xml-flow/logo-xml-flow.component';
 
 @Component({
@@ -41,24 +47,37 @@ export class AlertaExitoComponent implements OnInit {
   esProveedorSinRegistro(): boolean {
     const r = this.resultado();
     const cod = (r?.proveedor?.codigoProveedor || '').trim();
-    return !cod || cod === 'S/N' || cod.startsWith('PRV-');
+    const delCat = obtenerDatosCatalogoPorRfc(r?.proveedor?.rfc);
+    return (!cod || cod === 'S/N' || cod.startsWith('PRV-')) && !delCat;
   }
 
-  /** Días de crédito fijos por proveedor (30 días si está registrado y es PPD; 0 si no está registrado o es PUE) */
+  /** Días de crédito especificados directamente dentro del XML (atributo CondicionesDePago) */
+  diasEnXml(): number | null {
+    return diasCreditoDesdeXml(this.resultado()?.condicionesPago);
+  }
+
+  /** Días de crédito en la Lista de Proveedores (columna "Cond. Pag./Prov.") */
+  diasEnListaProveedores(): number | null {
+    const r = this.resultado();
+    if (!r || this.esProveedorSinRegistro()) return null;
+    return diasCreditoEnListaProveedores(r.proveedor?.rfc, r.diasCredito);
+  }
+
+  /** Plazo final validado (1° XML -> 2° Lista de Proveedores "Cond. Pag./Prov." -> 3° 0) */
   diasFijosProveedor(): number {
     const r = this.resultado();
-    if (!r || r.metodoPago !== 'PPD') return 0;
-    if (this.esProveedorSinRegistro()) return 0;
-    return r.diasCredito && r.diasCredito > 0 ? r.diasCredito : 30;
+    if (!r) return 0;
+    return calcularDiasCredito({
+      condicionesPago: r.condicionesPago,
+      metodoPago: r.metodoPago,
+      rfc: r.proveedor?.rfc,
+      diasCredito: r.diasCredito,
+    }).dias;
   }
 
-  /** Verifica si el archivo XML omite los días de crédito en el nodo <cfdi:Comprobante CondicionesDePago="..."> */
-  faltaDiasCreditoEnXml(): boolean {
-    const r = this.resultado();
-    if (!r) return false;
-    const cond = (r.condicionesPago || '').trim();
-    if (!cond) return true;
-    return !/\b(\d+)\s*d[ií]as?\b/i.test(cond);
+  /** Caso crítico: No viene en el XML y tampoco está registrado en la lista de proveedores */
+  sinDiasEnXmlNiEnListaProveedores(): boolean {
+    return this.diasEnXml() === null && this.diasEnListaProveedores() === null;
   }
 
   onFolioContrarreciboChange(valor: string): void {

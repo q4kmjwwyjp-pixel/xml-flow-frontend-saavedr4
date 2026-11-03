@@ -6,6 +6,7 @@ import {
   obtenerDatosCatalogoPorRfc,
   resolverCodigoProveedor,
 } from '../utils/catalogo-proveedores';
+import { calcularDiasCredito } from '../utils/dias-credito';
 import { API_URL } from '../config/api.config';
 
 @Injectable({
@@ -165,14 +166,13 @@ export class FacturaService {
       .trim()
       .toUpperCase();
 
-    const diasCreditoCalculados =
-      f.metodoPago === 'PPD'
-        ? estaRegistrado
-          ? f.diasCredito && f.diasCredito > 0
-            ? Number(f.diasCredito)
-            : 30
-          : 0
-        : 0;
+    // 1° XML (CondicionesDePago) -> 2° Lista de Proveedores ("Cond. Pag./Prov.") -> 3° 0 días
+    const diasCreditoCalculados = calcularDiasCredito({
+      condicionesPago: f.condicionesPago,
+      metodoPago: f.metodoPago,
+      rfc: rfcEmisor,
+      diasCredito: f.diasCredito,
+    }).dias;
 
     return {
       uuid: f.uuid,

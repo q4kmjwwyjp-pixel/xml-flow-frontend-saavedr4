@@ -7,6 +7,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { FacturaResumen } from '../../core/models/factura.model';
 import { calcularVencimiento } from '../../core/utils/factura-vencimiento';
 import {
+  calcularDiasCredito,
+  diasCreditoDesdeXml,
+  diasCreditoEnListaProveedores,
+} from '../../core/utils/dias-credito';
+import {
   FORMAS_PAGO,
   METODOS_PAGO,
   REGIMENES_FISCALES,
@@ -103,7 +108,43 @@ export class DetalleFactura implements OnInit {
     return { texto: '🟡 PENDIENTE', clase: 'programada' };
   });
 
-  esCredito = computed(() => this.factura()?.metodoPago === 'PPD');
+  /** Días de crédito indicados en el XML (<cfdi:Comprobante CondicionesDePago="...">) */
+  diasEnXml(): number | null {
+    return diasCreditoDesdeXml(this.factura()?.condicionesPago);
+  }
+
+  /** Días de crédito de la Lista de Proveedores (columna "Cond. Pag./Prov.") */
+  diasEnListaProveedores(): number | null {
+    const f = this.factura();
+    if (!f) return null;
+    return diasCreditoEnListaProveedores(f.rfcEmisor, f.diasCredito);
+  }
+
+  /** Regla única: 1° XML -> 2° Lista de Proveedores -> 3° sin plazo */
+  diasCreditoInfo = computed(() => {
+    const f = this.factura();
+    if (!f) {
+      return { dias: 0, origen: 'ninguno' as const, esCredito: false };
+    }
+    return calcularDiasCredito({
+      condicionesPago: f.condicionesPago,
+      metodoPago: f.metodoPago,
+      rfc: f.rfcEmisor,
+      diasCredito: f.diasCredito,
+    });
+  });
+
+  /** Días de crédito finales de la factura */
+  diasFijosProveedor(): number {
+    return this.diasCreditoInfo().dias;
+  }
+
+  /** true si no hay días ni en el XML ni en la Lista de Proveedores */
+  sinDiasEnXmlNiEnListaProveedores(): boolean {
+    return this.diasEnXml() === null && this.diasEnListaProveedores() === null;
+  }
+
+  esCredito = computed(() => this.diasCreditoInfo().esCredito);
 
   /** Impuestos = total - subtotal */
   impuestos = computed(() => {
@@ -139,12 +180,12 @@ export class DetalleFactura implements OnInit {
       {
         etiqueta:
           'Días de crédito en XML (Nodo <cfdi:Comprobante> atributo CondicionesDePago)',
-        valor: f.condicionesPago
-          ? `Especificado en XML: "${f.condicionesPago}"`
-          : `No hay días de crédito en XML (Falta el atributo CondicionesDePago en el nodo <cfdi:Comprobante>). Se mantiene fijo el plazo del proveedor (${f.diasCredito || 0} días).`,
-        ok: Boolean(
-          f.condicionesPago && /\b(\d+)\s*d[ií]as?\b/i.test(f.condicionesPago)
-        ),
+        valor: this.diasEnXml() !== null
+          ? `Especificado en XML: "${f.condicionesPago}" (${this.diasEnXml()} días)`
+          : this.diasEnListaProveedores() !== null
+            ? `No viene en el XML (atributo CondicionesDePago vacío). Se toma de la Lista de Proveedores "Cond. Pag./Prov.": ${this.diasEnListaProveedores()} días.`
+            : '⚠️ No se especifica en el XML los días de pago y el proveedor no está registrado en la Lista de Proveedores, favor de revisar.',
+        ok: this.diasEnXml() !== null,
       },
     ];
   });

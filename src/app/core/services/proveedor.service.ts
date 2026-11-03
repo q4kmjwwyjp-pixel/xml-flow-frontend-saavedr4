@@ -14,6 +14,8 @@ export interface Proveedor {
   rfc: string;
   nombre: string;
   regimenFiscal: string;
+  /** Columna "Cond. Pag./Prov." del catálogo oficial (días de crédito) */
+  diasCredito?: number | null;
   activo?: boolean;
 }
 
@@ -196,6 +198,7 @@ export class ProveedorService {
         rfc: item.rfc,
         nombre: item.nombre,
         regimenFiscal: item.regimenFiscal,
+        diasCredito: item.diasCredito ?? null,
       });
     }
 
@@ -218,6 +221,7 @@ export class ProveedorService {
           p.regimenFiscal ||
           previo?.regimenFiscal ||
           (rfcKey.length === 12 ? '601' : '612'),
+        diasCredito: p.diasCredito ?? previo?.diasCredito ?? null,
       });
     }
 
