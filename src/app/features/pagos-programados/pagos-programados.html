@@ -68,11 +68,11 @@
             </div>
 
             <div class="input-container">
-                <label for="condicion">💳 Condición de Pago</label>
+                <label for="condicion">💳 Método de Pago SAT</label>
                 <select id="condicion" [(ngModel)]="filtroCondicion" (change)="aplicarFiltros()" class="form-control">
-                    <option value="TODAS">Todas las condiciones</option>
-                    <option value="PUE">Contado (PUE)</option>
-                    <option value="PPD">Crédito (PPD)</option>
+                    <option value="TODAS">Todos los métodos (PPD y PUE)</option>
+                    <option value="PUE">PUE (Una sola exhibición)</option>
+                    <option value="PPD">PPD (Diferido / Crédito)</option>
                 </select>
             </div>
 
@@ -156,7 +156,7 @@
                         </td>
                         <td>
                             <span class="badge-method" [ngClass]="f.metodoPago.toLowerCase()">
-                                {{ f.metodoPago === 'PUE' ? '💵 Contado' : '💳 Crédito' }}
+                                {{ f.metodoPago === 'PUE' ? '💵 PUE (Una exhibición)' : '💳 PPD (Crédito)' }}
                             </span>
                         </td>
                         <td>{{ f.diasCredito ? f.diasCredito + ' días' : 'N/A' }}</td>

@@ -309,7 +309,7 @@
   <div class="card">
     <h2 class="card-title">Condiciones comerciales</h2>
     <dl class="info-grid">
-      <div class="info-item"><dt>Condición de pago</dt><dd>{{ esCredito() ? 'Crédito' : 'Contado' }}</dd></div>
+      <div class="info-item"><dt>Condición de pago</dt><dd>{{ esCredito() ? 'Crédito / Diferido (PPD)' : 'Una sola exhibición (PUE)' }}</dd></div>
       <div class="info-item"><dt>Método de pago</dt><dd>{{ metodo(f.metodoPago) }}</dd></div>
       <div class="info-item"><dt>Forma de pago</dt><dd>{{ forma(f.formaPago) }}</dd></div>
       <div class="info-item">
@@ -349,7 +349,7 @@
       } @else if (f.estado.toLowerCase() === 'vencido') {
       Factura rechazada/vencida manualmente.
       } @else if (!esCredito()) {
-      Pago de contado: sin plazo pendiente
+      Factura PUE (Una sola exhibición): sin plazo pendiente
       } @else if (v.diasRestantes === 0) {
       Vence hoy
       } @else {

@@ -164,17 +164,17 @@
         </select>
       </div>
 
-      <!-- Condición -->
+      <!-- Condición / Método SAT -->
       <div class="field-group">
-        <label for="filtroCondicion">💳 Condición / Método SAT</label>
+        <label for="filtroCondicion">💳 Método de Pago SAT</label>
         <select
           id="filtroCondicion"
           [(ngModel)]="filtroCondicion"
           (change)="aplicarFiltros()"
           class="form-input">
-          <option value="TODAS">Todas (Crédito y Contado)</option>
-          <option value="PPD">PPD - Crédito / Diferido</option>
-          <option value="PUE">PUE - Contado (Una exhibición)</option>
+          <option value="TODAS">Todas las facturas (PPD y PUE)</option>
+          <option value="PPD">PPD - Parcialidades o Diferido</option>
+          <option value="PUE">PUE - Una sola exhibición</option>
         </select>
       </div>
 
