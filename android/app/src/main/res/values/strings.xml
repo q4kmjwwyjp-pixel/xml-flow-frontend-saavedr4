@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vexel</string>
+    <string name="title_activity_main">Vexel</string>
+    <string name="package_name">com.vexel.app</string>
+    <string name="custom_url_scheme">com.vexel.app</string>
+</resources>
