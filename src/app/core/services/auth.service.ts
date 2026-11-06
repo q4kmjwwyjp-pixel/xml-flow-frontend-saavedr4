@@ -38,8 +38,8 @@ export class AuthService {
     const u = this.usuarioActual();
     if (!u) return 'Sin sesión';
     return u.rol === 'admin'
-      ? '🛠️ Admin (Modo Completo + Pruebas)'
-      : '👩‍💼 Daniela (Operaciones y Pagos)';
+      ? 'Administrador'
+      : 'Daniela (Operaciones)';
   });
 
   constructor(private http: HttpClient) {}

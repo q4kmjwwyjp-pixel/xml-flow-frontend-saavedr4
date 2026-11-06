@@ -1,294 +1,225 @@
 <section class="table-section page-transition-enter">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+  <div class="flex justify-between items-center flex-wrap gap-2.5">
+    <button
+      type="button"
+      (click)="regresar()"
+      class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition cursor-pointer shadow-xs">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+      </svg>
+      {{ textoBotonRegresar() }}
+    </button>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <span
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border bg-white text-slate-700 border-slate-200">
+        <span class="w-2 h-2 rounded-full" [ngClass]="authService.esAdmin() ? 'bg-indigo-500' : 'bg-emerald-500'"></span>
+        {{ authService.etiquetaUsuario() }}
+      </span>
+
+      @if (authService.esAdmin()) {
         <button
-            type="button"
-            (click)="regresar()"
-            class="bg-blue-600 hover:bg-blue-700 text-white btn px-4 py-2 rounded-lg shadow-xs cursor-pointer">
-            {{ textoBotonRegresar() }}
+          type="button"
+          (click)="alternarVistaPruebas()"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer"
+          [ngClass]="
+            authService.mostrarDatosPrueba()
+              ? 'bg-amber-50 text-amber-800 border-amber-300'
+              : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+          ">
+          <span class="w-1.5 h-1.5 rounded-full" [ngClass]="authService.mostrarDatosPrueba() ? 'bg-amber-500' : 'bg-slate-400'"></span>
+          {{ authService.mostrarDatosPrueba() ? 'Pruebas: Visibles' : 'Vista Daniela (Limpia)' }}
         </button>
+      }
 
-        <div class="flex flex-wrap items-center gap-2.5">
-            <span
-                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border"
-                [ngClass]="
-                    authService.esAdmin()
-                        ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                ">
-                {{ authService.etiquetaUsuario() }}
-            </span>
-
-            @if (authService.esAdmin()) {
-                <button
-                    type="button"
-                    (click)="alternarVistaPruebas()"
-                    class="px-3 py-2 rounded-lg text-xs font-bold border transition cursor-pointer"
-                    [ngClass]="
-                        authService.mostrarDatosPrueba()
-                            ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                    ">
-                    {{
-                        authService.mostrarDatosPrueba()
-                            ? '🧪 Pruebas: Visibles'
-                            : '👁️ Vista como Daniela'
-                    }}
-                </button>
-            }
-
-            <button
-                type="button"
-                (click)="cargarFacturas()"
-                [disabled]="cargando()"
-                class="btn btn-secondary cursor-pointer">
-                🔄 Actualizar Lista
-            </button>
-        </div>
+      <button
+        type="button"
+        (click)="cargarFacturas()"
+        [disabled]="cargando()"
+        class="btn btn-secondary cursor-pointer">
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Actualizar
+      </button>
     </div>
-    
-    <div class="table-header" style="margin-top: 16px;">
-        <h2>📅 Tablero de Pagos Programados</h2>
+  </div>
+
+  <div class="table-header">
+    <h2>Tablero de Pagos Programados</h2>
+  </div>
+
+  <!-- Barra de Filtros -->
+  <section class="filter-panel">
+    <div class="filter-group">
+      <div class="input-container">
+        <label for="buscar">Buscar Folio, Contrarrecibo o RFC</label>
+        <input
+          id="buscar"
+          type="text"
+          [(ngModel)]="busquedaTexto"
+          (input)="aplicarFiltros()"
+          placeholder="Escribe folio, contrarrecibo, N° prov o RFC..."
+          class="form-control" />
+      </div>
+
+      <div class="input-container calendar-filter">
+        <label for="programacion">Fecha Programada</label>
+        <div class="date-input-wrapper">
+          <input
+            id="programacion"
+            type="date"
+            [(ngModel)]="fechaFiltroProgramacion"
+            (change)="aplicarFiltros()"
+            class="form-control date-control" />
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="condicion">Método SAT</label>
+        <select id="condicion" [(ngModel)]="filtroCondicion" (change)="aplicarFiltros()" class="form-control">
+          <option value="TODAS">Todos (PPD y PUE)</option>
+          <option value="PUE">PUE (Una sola exhibición)</option>
+          <option value="PPD">PPD (Diferido / Crédito)</option>
+        </select>
+      </div>
+
+      <div class="input-container sort-container">
+        <label for="orden-fecha">Ordenar por fecha</label>
+        <select id="orden-fecha" (change)="cambiarOrden($event)" class="form-control">
+          <option value="asc">Más antiguos primero</option>
+          <option value="desc">Más recientes primero</option>
+        </select>
+      </div>
     </div>
 
-    <!-- Barra de Filtros Restaurada -->
-    <section class="filter-panel">
-        <div class="filter-group">
-            <div class="input-container">
-                <label for="buscar">🔍 Buscar Folio, Contrarrecibo, N° Proveedor o RFC</label>
-                <input id="buscar" type="text" [(ngModel)]="busquedaTexto" (input)="aplicarFiltros()"
-                    placeholder="Escribe PRUEBAS, folio, contrarrecibo, N° de proveedor o RFC..." class="form-control" />
-            </div>
-
-            <div class="input-container calendar-filter">
-                <label for="programacion">🗓️ Fecha Programada de Pago</label>
-                <div class="date-input-wrapper">
-                    <input id="programacion" type="date" [(ngModel)]="fechaFiltroProgramacion" (change)="aplicarFiltros()"
-                        class="form-control date-control" />
-                </div>
-            </div>
-
-            <div class="input-container">
-                <label for="condicion">💳 Método de Pago SAT</label>
-                <select id="condicion" [(ngModel)]="filtroCondicion" (change)="aplicarFiltros()" class="form-control">
-                    <option value="TODAS">Todos los métodos (PPD y PUE)</option>
-                    <option value="PUE">PUE (Una sola exhibición)</option>
-                    <option value="PPD">PPD (Diferido / Crédito)</option>
-                </select>
-            </div>
-
-            <div class="input-container sort-container">
-                <label for="orden-fecha">🔃 Ordenar por fecha</label>
-                <select id="orden-fecha" (change)="cambiarOrden($event)" class="form-control">
-                    <option value="asc">Más antiguos primero</option>
-                    <option value="desc">Más recientes primero</option>
-                </select>
-            </div>
-        </div>
-
-        @if (!cargando()) {
-        <div class="filter-results-info">
-            Mostrando <strong>{{ facturasFiltradas.length }}</strong> de {{ todasLasFacturas.length }} comprobantes
-            @if (fechaFiltroProgramacion) {
-                <span class="active-filter-badge">
-                    📌 Filtro de fecha activo: {{ fechaFiltroProgramacion }}
-                </span>
-            }
-        </div>
+    @if (!cargando()) {
+      <div class="filter-results-info">
+        <span>Mostrando <strong>{{ facturasFiltradas.length }}</strong> de {{ todasLasFacturas.length }} comprobantes</span>
+        @if (fechaFiltroProgramacion) {
+          <span class="active-filter-badge">
+            Filtro de fecha: {{ fechaFiltroProgramacion }}
+          </span>
         }
-    </section>
-
-    @if (cargando()) {
-        <div class="app-loader-card" role="status" aria-live="polite">
-            <div class="app-spinner-wrapper" aria-hidden="true">
-                <div class="app-spinner-ring"></div>
-                <div class="app-spinner-dot"></div>
-            </div>
-            <h2 class="app-loader-title">Cargando pagos programados...</h2>
-            <p class="app-loader-subtitle">Consultando el calendario de vencimientos y estados de pago CFDI 4.0.</p>
-        </div>
-    } @else if (errorCarga()) {
-        <div class="p-4 mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center justify-between gap-4">
-            <span><strong>⚠️ Error:</strong> {{ errorCarga() }}</span>
-            <button type="button" (click)="cargarFacturas()" class="btn btn-secondary">Reintentar</button>
-        </div>
-    } @else {
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>📄 Folio / Contrarrecibo</th>
-                        <th>🏢 Proveedor</th>
-                        <th>💳 Condición</th>
-                        <th>⏳ Crédito</th>
-                        <th>🗓️ Fecha Pago Programada</th>
-                        <th>💰 Total</th>
-                        <th>🏷️ Estado</th>
-                        <th>⚙️ Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (f of facturasFiltradas; track f.uuid || f.folio) {
-                    <tr [class.bg-amber-50/40]="(f.folio || '').startsWith('PRUEBAS') || (f.nombreProveedor || '').includes('PRUEBAS')">
-                        <td class="cell-folio">
-                            <div class="flex flex-col gap-1">
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <strong>{{ f.folio }}</strong>
-                                    @if ((f.folio || '').startsWith('PRUEBAS') || (f.nombreProveedor || '').includes('PRUEBAS')) {
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300">
-                                            🧪 PRUEBAS
-                                        </span>
-                                    }
-                                </div>
-                                @if (f.folioContrarrecibo) {
-                                    <span class="inline-flex items-center w-fit px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                        🧾 CR: #{{ f.folioContrarrecibo }}
-                                    </span>
-                                } @else {
-                                    <span class="text-[11px] text-slate-400">Sin contrarrecibo</span>
-                                }
-                            </div>
-                        </td>
-                        <td>
-                            <div class="provider-info">
-                                <span class="provider-name">{{ f.nombreProveedor }}</span>
-                                <span class="provider-rfc">N° Prov: #{{ f.codigoProveedor }} · RFC: {{ f.rfcEmisor }}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge-method" [ngClass]="f.metodoPago.toLowerCase()">
-                                {{ f.metodoPago === 'PUE' ? '💵 PUE (Una exhibición)' : '💳 PPD (Crédito)' }}
-                            </span>
-                        </td>
-                        <td>{{ f.diasCredito ? f.diasCredito + ' días' : 'N/A' }}</td>
-                        <td>
-                            <div class="due-date-info">
-                                <strong>{{ f.fechaProgramacionPago || 'N/A' }}</strong>
-                                @if (esPagoHoy(f.fechaProgramacionPago) && f.estado?.toLowerCase() === 'pendiente') {
-                                    <span class="badge-tag warning">¡Pagar hoy! ⚠️</span>
-                                }
-                            </div>
-                        </td>
-                        <td class="cell-amount">
-                            {{ (f.total || 0).toLocaleString('es-MX', { style: 'currency', currency: f.moneda === 'USD' ? 'USD' : 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                            <span class="text-xs text-slate-500 font-mono">{{ f.moneda || 'MXN' }}</span>
-                        </td>
-                        <td>
-                            <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
-                                {{
-                                    f.estado === 'pendiente' ? '🟡 PENDIENTE' : 
-                                    (f.estado === 'pagado' ? '🟢 PAGADO' : '🔴 VENCIDO/CANCELADO')
-                                }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <a
-                                    [routerLink]="['/pagos-programados', f.uuid]"
-                                    [queryParams]="{ origen: 'pagos', retorno: origenNavegacion() }"
-                                    [state]="{ origen: 'pagos', retorno: origenNavegacion() }"
-                                    class="btn-detail"
-                                    style="display: inline-block; text-decoration: none;">
-                                    Ver detalle
-                                </a>
-                                @if (authService.esAdmin()) {
-                                    <button
-                                        type="button"
-                                        (click)="eliminarXml(f)"
-                                        title="Eliminar factura XML (Solo Admin)"
-                                        class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 text-xs font-bold transition cursor-pointer">
-                                        🗑️
-                                    </button>
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                    }
-
-                    @if (facturasFiltradas.length === 0) {
-                    <tr>
-                        <td colspan="8" class="empty-state">
-                            👻 No se encontraron comprobantes que coincidan con los filtros aplicados.
-                        </td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+      </div>
     }
-</section>
+  </section>
 
-<!-- Modal: Detalle de Validación Fiscal del Comprobante -->
-@if (facturaSeleccionada) {
-<div class="modal-backdrop" (click)="cerrarDetalle()">
-    <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <h3>📑 Auditoría Fiscal: {{ facturaSeleccionada.folio }}</h3>
-            <button class="btn-close" (click)="cerrarDetalle()">✕</button>
-        </div>
-        <div class="modal-body">
-            <div class="detail-row">
-                <span class="label">🔢 N° de Proveedor (Clave):</span>
-                <span class="val"><strong>#{{ facturaSeleccionada.codigoProveedor }}</strong></span>
-            </div>
-            <div class="detail-row">
-                <span class="label">🏢 Proveedor:</span>
-                <span class="val">{{ facturaSeleccionada.nombreProveedor }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">🆔 RFC Emisor:</span>
-                <span class="val">{{ facturaSeleccionada.rfcEmisor }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">📥 Fecha Recepción XML:</span>
-                <span class="val">{{ facturaSeleccionada.fechaRevision }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">💳 Método de pago:</span>
-                <span class="val">
-                    <strong>{{ facturaSeleccionada.metodoPago }}</strong>
-                    {{ facturaSeleccionada.metodoPago === 'PPD' ? '(Parcialidades o Diferido)' : '(Una Sola Exhibición)' }}
-                </span>
-            </div>
-            <div class="detail-row">
-                <span class="label">🏷️ Estado de la factura:</span>
-                <span class="val" [ngClass]="'status-badge ' + facturaSeleccionada.estado.toLowerCase()">
-                    {{ facturaSeleccionada.estado | uppercase }}
-                </span>
-            </div>
-            <div class="detail-row">
-                <span class="label">🗓️ Fecha Programada de Pago:</span>
-                <span class="val highlight">{{ facturaSeleccionada.fechaProgramacionPago || 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">💰 Monto a Pagar:</span>
-                <span class="val highlight">{{ (facturaSeleccionada.total || 0).toLocaleString('es-MX', { style:
-                    'currency', currency: 'MXN' }) }}</span>
-            </div>
-
-            <!-- Checklist de Comprobaciones Fiscales -->
-            <h4 class="section-subtitle">✅ Comprobaciones Fiscales del CFDI:</h4>
-            <div class="checks-list">
-                <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.regimenValido">
-                    {{ facturaSeleccionada.checksFiscales.regimenValido ? '✓' : '❌' }} Régimen Fiscal: 624 (Coordinados)
-                </div>
-                <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.usoCfdiValido">
-                    {{ facturaSeleccionada.checksFiscales.usoCfdiValido ? '✓' : '❌' }} Uso de CFDI: G03 (Gastos en general)
-                </div>
-                <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales.metodoPagoValido">
-                    {{ facturaSeleccionada.checksFiscales.metodoPagoValido ? '✓' : '❌' }} Método de pago válido
-                </div>
-            </div>
-
-            @if (facturaSeleccionada.motivoRechazo) {
-            <div class="error-box">
-                <strong>⚠️ Motivo de Rechazo:</strong>
-                <p>{{ facturaSeleccionada.motivoRechazo }}</p>
-            </div>
-            }
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
-        </div>
+  @if (cargando()) {
+    <div class="app-loader-card" role="status" aria-live="polite">
+      <div class="app-spinner-wrapper" aria-hidden="true">
+        <div class="app-spinner-ring"></div>
+        <div class="app-spinner-dot"></div>
+      </div>
+      <h2 class="app-loader-title">Cargando pagos programados...</h2>
+      <p class="app-loader-subtitle">Consultando vencimientos y estados de pago CFDI 4.0.</p>
     </div>
-</div>
-}
+  } @else if (errorCarga()) {
+    <div class="p-4 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between gap-4 text-xs">
+      <span><strong>Error:</strong> {{ errorCarga() }}</span>
+      <button type="button" (click)="cargarFacturas()" class="btn btn-secondary">Reintentar</button>
+    </div>
+  } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Folio / Contrarrecibo</th>
+            <th>Proveedor</th>
+            <th>Condición</th>
+            <th>Crédito</th>
+            <th>Fecha Programada</th>
+            <th style="text-align: right;">Total</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of facturasFiltradas; track f.uuid || f.folio) {
+            <tr [class.bg-slate-50]="(f.folio || '').startsWith('PRUEBAS') || (f.nombreProveedor || '').includes('PRUEBAS')">
+              <td class="cell-folio">
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <strong>{{ f.folio }}</strong>
+                    @if ((f.folio || '').startsWith('PRUEBAS') || (f.nombreProveedor || '').includes('PRUEBAS')) {
+                      <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-200 text-slate-800">
+                        Pruebas
+                      </span>
+                    }
+                  </div>
+                  @if (f.folioContrarrecibo) {
+                    <span class="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                      CR: #{{ f.folioContrarrecibo }}
+                    </span>
+                  } @else {
+                    <span class="text-[11px] text-slate-400">Sin contrarrecibo</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <div class="provider-info">
+                  <span class="provider-name">{{ f.nombreProveedor }}</span>
+                  <span class="provider-rfc">#{{ f.codigoProveedor }} &bull; RFC: {{ f.rfcEmisor }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge-method" [ngClass]="f.metodoPago.toLowerCase()">
+                  {{ f.metodoPago === 'PUE' ? 'PUE' : 'PPD (Crédito)' }}
+                </span>
+              </td>
+              <td class="text-xs text-slate-600">{{ f.diasCredito ? f.diasCredito + ' días' : '—' }}</td>
+              <td>
+                <div class="due-date-info">
+                  <span class="font-medium">{{ f.fechaProgramacionPago || '—' }}</span>
+                  @if (esPagoHoy(f.fechaProgramacionPago) && f.estado?.toLowerCase() === 'pendiente') {
+                    <span class="badge-tag warning">Hoy</span>
+                  }
+                </div>
+              </td>
+              <td class="cell-amount">
+                {{ (f.total || 0).toLocaleString('es-MX', { style: 'currency', currency: f.moneda === 'USD' ? 'USD' : 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                <span class="text-[11px] text-slate-500 font-mono ml-0.5">{{ f.moneda || 'MXN' }}</span>
+              </td>
+              <td>
+                <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
+                  {{ f.estado }}
+                </span>
+              </td>
+              <td>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <a
+                    [routerLink]="['/pagos-programados', f.uuid]"
+                    [queryParams]="{ origen: 'pagos', retorno: origenNavegacion() }"
+                    [state]="{ origen: 'pagos', retorno: origenNavegacion() }"
+                    class="btn-detail"
+                    style="display: inline-block; text-decoration: none;">
+                    Detalle
+                  </a>
+                  @if (authService.esAdmin()) {
+                    <button
+                      type="button"
+                      (click)="eliminarXml(f)"
+                      title="Eliminar factura XML (Solo Admin)"
+                      class="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+
+          @if (facturasFiltradas.length === 0) {
+            <tr>
+              <td colspan="8" class="empty-state">
+                No se encontraron comprobantes que coincidan con los filtros aplicados.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

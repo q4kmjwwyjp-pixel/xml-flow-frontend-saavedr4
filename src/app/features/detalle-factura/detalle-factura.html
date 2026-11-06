@@ -1,362 +1,364 @@
 <section class="detalle-page page-transition-enter">
   <button type="button" (click)="regresar()" class="btn-back">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+    </svg>
     {{ textoBotonRegresar() }}
   </button>
 
   @if (cargando()) {
-  <div class="app-loader-card" role="status" aria-live="polite" style="width: 100%;">
-    <div class="app-spinner-wrapper" aria-hidden="true">
-      <div class="app-spinner-ring"></div>
-      <div class="app-spinner-dot"></div>
+    <div class="app-loader-card" role="status" aria-live="polite" style="width: 100%;">
+      <div class="app-spinner-wrapper" aria-hidden="true">
+        <div class="app-spinner-ring"></div>
+        <div class="app-spinner-dot"></div>
+      </div>
+      <h2 class="app-loader-title">Cargando auditoría de la factura...</h2>
+      <p class="app-loader-subtitle">Consultando desglose fiscal y estatus del comprobante CFDI 4.0.</p>
     </div>
-    <h2 class="app-loader-title">Cargando auditoría de la factura...</h2>
-    <p class="app-loader-subtitle">Consultando desglose fiscal y estatus del comprobante CFDI 4.0.</p>
-  </div>
   } @else if (error()) {
-  <div class="state-box error">
-    <h2>Ocurrió un problema</h2>
-    <p>{{ error() }}</p>
-  </div>
+    <div class="state-box error">
+      <h2 class="text-base font-bold text-rose-700">Ocurrió un problema</h2>
+      <p class="text-xs text-rose-600 mt-1">{{ error() }}</p>
+    </div>
   } @else if (factura(); as f) {
 
-  <!-- Toast / Notificación de retroalimentación visual -->
-  @if (notificacion(); as notif) {
-    <div
-      role="status"
-      aria-live="polite"
-      class="p-4 rounded-xl border text-sm font-medium flex items-center justify-between gap-3 shadow-xs transition"
-      [ngClass]="
-        notif.tipo === 'exito'
-          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-          : 'bg-rose-50 border-rose-200 text-rose-800'
-      ">
-      <div class="flex items-center gap-2">
-        <span>{{ notif.tipo === 'exito' ? '✅' : '⚠️' }}</span>
-        <span>{{ notif.mensaje }}</span>
-      </div>
-      <button
-        type="button"
-        (click)="notificacion.set(null)"
-        class="text-xs font-bold opacity-70 hover:opacity-100 cursor-pointer">
-        ✕
-      </button>
-    </div>
-  }
-
-  <!-- Encabezado -->
-  <header class="detalle-header">
-    <div>
-      <div class="flex items-center flex-wrap gap-2.5">
-        <h1>Factura {{ f.folio }}</h1>
-        @if (f.folioContrarrecibo) {
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-200">
-            🧾 Contrarrecibo #{{ f.folioContrarrecibo }}
-          </span>
-        }
-      </div>
-      <p class="subtitle">Proveedor #{{ f.codigoProveedor }} · {{ f.nombreProveedor }} · RFC {{ f.rfcEmisor }}</p>
-    </div>
-    <span [class]="'status-badge ' + estadoVisual().clase">{{ estadoVisual().texto }}</span>
-  </header>
-
-  <!-- Diagnóstico de Días de Crédito: 1° XML -> 2° Lista de Proveedores ("Cond. Pag./Prov.") -> 3° Alerta -->
-  @if (sinDiasEnXmlNiEnListaProveedores()) {
-    <div class="p-3.5 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs leading-relaxed">
-      <div class="font-extrabold text-red-800 mb-1 flex items-center gap-1.5">
-        <span>⚠️</span>
-        <span>No se especifica en el XML los días de pago y en la lista de proveedores no está registrado, favor de revisar.</span>
-      </div>
-      <p class="text-red-700">
-        <strong>Detalle de revisión:</strong> El nodo
-        <code class="px-1 py-0.5 rounded bg-red-100 font-mono text-[11px]">&lt;cfdi:Comprobante CondicionesDePago&gt;</code>
-        viene vacío o sin días en el XML y el RFC <strong>{{ f.rfcEmisor }}</strong> no aparece registrado con días de crédito en la columna
-        <strong>"Cond. Pag./Prov."</strong> de la Lista de Proveedores.
-      </p>
-    </div>
-  } @else if (diasEnXml() === null) {
-    <div class="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 text-xs leading-relaxed">
-      <div class="font-extrabold text-blue-900 mb-0.5 flex items-center gap-1.5">
-        <span>✓</span>
-        <span>Días de crédito validados con la Lista de Proveedores ("Cond. Pag./Prov."): {{ diasEnListaProveedores() }} días</span>
-      </div>
-      <p class="text-blue-800">
-        El archivo XML no especificaba los días en
-        <code class="px-1 py-0.5 rounded bg-blue-100 font-mono text-[11px]">&lt;cfdi:Comprobante CondicionesDePago&gt;</code>,
-        por lo que se tomaron automáticamente de la columna <strong>"Cond. Pag./Prov."</strong> del proveedor
-        <strong>#{{ f.codigoProveedor }}</strong>.
-      </p>
-    </div>
-  }
-
-  <!-- Panel de Acciones Manuales de Estado + Folio de Contrarrecibo (ERP / Advan) -->
-  <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-5">
-    <!-- 1. Actualizar Estado Manualmente -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-      <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
-        Actualizar estado manualmente:
-      </span>
-      <div class="buttons-group">
+    <!-- Notificación Feedback -->
+    @if (notificacion(); as notif) {
+      <div
+        role="status"
+        aria-live="polite"
+        class="p-3.5 rounded-lg border text-xs font-medium flex items-center justify-between gap-3 shadow-2xs transition"
+        [ngClass]="
+          notif.tipo === 'exito'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-rose-50 border-rose-200 text-rose-800'
+        ">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0" [ngClass]="notif.tipo === 'exito' ? 'text-emerald-600' : 'text-rose-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path *ngIf="notif.tipo === 'exito'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            <path *ngIf="notif.tipo !== 'exito'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span>{{ notif.mensaje }}</span>
+        </div>
         <button
-          class="btn-action success"
-          (click)="marcarComoPagado()"
-          [disabled]="procesandoCambioEstado() || f.estado.toLowerCase() === 'pagado'">
-          @if (procesandoCambioEstado()) {
-            <span class="btn-inline-spinner" aria-hidden="true"></span>
-          }
-          💰 Marcar como Pagada
+          type="button"
+          (click)="notificacion.set(null)"
+          class="text-xs font-bold opacity-70 hover:opacity-100 cursor-pointer p-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
+      </div>
+    }
 
-        <button
-          class="btn-action danger"
-          (click)="marcarComoVencido()"
-          [disabled]="procesandoCambioEstado() || f.estado.toLowerCase() === 'vencido'">
-          @if (procesandoCambioEstado()) {
-            <span class="btn-inline-spinner" aria-hidden="true"></span>
+    <!-- Encabezado -->
+    <header class="detalle-header">
+      <div>
+        <div class="flex items-center flex-wrap gap-2">
+          <h1>Factura {{ f.folio }}</h1>
+          @if (f.folioContrarrecibo) {
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold font-mono bg-slate-100 text-slate-800 border border-slate-200">
+              Contrarrecibo #{{ f.folioContrarrecibo }}
+            </span>
           }
-          ⚠️ Marcar como Vencida
-        </button>
+        </div>
+        <p class="subtitle">Proveedor #{{ f.codigoProveedor }} &bull; {{ f.nombreProveedor }} &bull; RFC: {{ f.rfcEmisor }}</p>
+      </div>
+      <span [class]="'status-badge ' + estadoVisual().clase">{{ estadoVisual().texto }}</span>
+    </header>
 
-        @if (authService.esAdmin()) {
+    <!-- Diagnóstico de Días de Crédito -->
+    @if (sinDiasEnXmlNiEnListaProveedores()) {
+      <div class="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs leading-relaxed">
+        <div class="font-bold text-rose-900 mb-1 flex items-center gap-1.5">
+          <svg class="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/>
+            <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+          </svg>
+          <span>No se especifican días en XML ni en lista de proveedores. Favor de revisar.</span>
+        </div>
+        <p class="text-rose-700">
+          El atributo CondicionesDePago no contiene plazo y el RFC <strong>{{ f.rfcEmisor }}</strong> no tiene días registrados en la columna Cond. Pag./Prov.
+        </p>
+      </div>
+    } @else if (diasEnXml() === null) {
+      <div class="p-3.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-xs leading-relaxed">
+        <div class="font-bold text-slate-900 mb-0.5 flex items-center gap-1.5">
+          <svg class="w-4 h-4 shrink-0 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span>Días de crédito validados con catálogo de proveedores: {{ diasEnListaProveedores() }} días</span>
+        </div>
+        <p class="text-slate-600">
+          Tomados automáticamente de la columna Cond. Pag./Prov. del proveedor <strong>#{{ f.codigoProveedor }}</strong>.
+        </p>
+      </div>
+    }
+
+    <!-- Panel de Acciones de Estado + Contrarrecibo -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-4">
+      <!-- 1. Actualizar Estado -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Estado del comprobante:
+        </span>
+        <div class="buttons-group">
           <button
-            type="button"
-            (click)="eliminarFacturaActual()"
-            [disabled]="eliminandoFactura()"
-            class="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition cursor-pointer">
-            {{ eliminandoFactura() ? 'Eliminando...' : '🗑️ Eliminar XML (Admin)' }}
+            class="btn-action success"
+            (click)="marcarComoPagado()"
+            [disabled]="procesandoCambioEstado() || f.estado.toLowerCase() === 'pagado'">
+            @if (procesandoCambioEstado()) {
+              <span class="btn-inline-spinner" aria-hidden="true"></span>
+            }
+            Marcar como Pagada
           </button>
-        }
-      </div>
-    </div>
 
-    <!-- 2. Asignación de Folio de Contrarrecibo (ERP / Advan) -->
-    <div>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-        <label
-          for="inputFolioContrarrecibo"
-          class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-          <span>🧾 Folio de Contrarrecibo (ERP / Advan)</span>
-        </label>
+          <button
+            class="btn-action danger"
+            (click)="marcarComoVencido()"
+            [disabled]="procesandoCambioEstado() || f.estado.toLowerCase() === 'vencido'">
+            @if (procesandoCambioEstado()) {
+              <span class="btn-inline-spinner" aria-hidden="true"></span>
+            }
+            Marcar como Vencida
+          </button>
 
-        <!-- Contador de otras facturas que comparten el mismo contrarrecibo -->
-        @if ((folioContrarreciboInput() || f.folioContrarrecibo || '').trim()) {
-          @if (otrasFacturasConMismoFolio().length > 0) {
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-              🔗 Compartido con {{ otrasFacturasConMismoFolio().length }}
-              {{ otrasFacturasConMismoFolio().length === 1 ? 'otra factura' : 'otras facturas' }}
-            </span>
-          } @else {
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              ✓ Folio único asignado
-            </span>
+          @if (authService.esAdmin()) {
+            <button
+              type="button"
+              (click)="eliminarFacturaActual()"
+              [disabled]="eliminandoFactura()"
+              class="px-3 py-1.5 rounded-md bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold transition cursor-pointer">
+              {{ eliminandoFactura() ? 'Eliminando...' : 'Eliminar XML' }}
+            </button>
           }
-        }
+        </div>
       </div>
 
-      <p class="text-xs text-slate-500 mb-3">
-        Asigna el número de contrarrecibo emitido por el ERP para incluir y agrupar esta factura en el Generador de Reportes Semanales.
-      </p>
+      <!-- 2. Asignación de Folio de Contrarrecibo -->
+      <div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+          <label
+            for="inputFolioContrarrecibo"
+            class="text-xs font-semibold uppercase tracking-wider text-slate-700">
+            Folio de Contrarrecibo (ERP)
+          </label>
 
-      <form (ngSubmit)="guardarFolioContrarrecibo()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-        <input
-          id="inputFolioContrarrecibo"
-          type="text"
-          name="folioContrarrecibo"
-          [ngModel]="folioContrarreciboInput()"
-          (ngModelChange)="folioContrarreciboInput.set($event)"
-          placeholder="Ej. 338746"
-          class="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-mono text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
-
-        <button
-          type="submit"
-          [disabled]="guardandoContrarrecibo()"
-          class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-xs transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
-          @if (guardandoContrarrecibo()) {
-            <span class="btn-inline-spinner" aria-hidden="true"></span>
-            <span>Guardando...</span>
-          } @else {
-            <span>💾 {{ f.folioContrarrecibo ? 'Actualizar Folio' : 'Guardar Folio' }}</span>
-          }
-        </button>
-      </form>
-
-      @if (otrasFacturasConMismoFolio().length > 0) {
-        <div class="mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
-          <span class="font-semibold text-slate-700">Facturas agrupadas en este mismo contrarrecibo:</span>
-          <div class="flex flex-wrap gap-1.5 mt-1.5">
-            @for (otra of otrasFacturasConMismoFolio(); track otra.uuid) {
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 font-mono text-slate-700">
-                {{ otra.folio }} ({{ moneda(otra.total) }})
+          @if ((folioContrarreciboInput() || f.folioContrarrecibo || '').trim()) {
+            @if (otrasFacturasConMismoFolio().length > 0) {
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                Compartido con {{ otrasFacturasConMismoFolio().length }} {{ otrasFacturasConMismoFolio().length === 1 ? 'otra' : 'otras' }}
+              </span>
+            } @else {
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Folio único asignado
               </span>
             }
+          }
+        </div>
+
+        <p class="text-xs text-slate-500 mb-2.5">
+          Agrupa esta factura en el reporte contable por su número de contrarrecibo.
+        </p>
+
+        <form (ngSubmit)="guardarFolioContrarrecibo()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input
+            id="inputFolioContrarrecibo"
+            type="text"
+            name="folioContrarrecibo"
+            [ngModel]="folioContrarreciboInput()"
+            (ngModelChange)="folioContrarreciboInput.set($event)"
+            placeholder="Ej. 338746"
+            class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm font-mono text-slate-900 bg-white focus:border-slate-900 outline-none transition" />
+
+          <button
+            type="submit"
+            [disabled]="guardandoContrarrecibo()"
+            class="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap">
+            @if (guardandoContrarrecibo()) {
+              <span class="btn-inline-spinner" aria-hidden="true"></span>
+              <span>Guardando...</span>
+            } @else {
+              <span>{{ f.folioContrarrecibo ? 'Actualizar Folio' : 'Guardar Folio' }}</span>
+            }
+          </button>
+        </form>
+
+        @if (otrasFacturasConMismoFolio().length > 0) {
+          <div class="mt-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+            <span class="font-medium text-slate-700">Facturas agrupadas con este contrarrecibo:</span>
+            <div class="flex flex-wrap gap-1.5 mt-1">
+              @for (otra of otrasFacturasConMismoFolio(); track otra.uuid) {
+                <span class="inline-flex items-center px-2 py-0.5 rounded bg-white border border-slate-200 font-mono text-[11px] text-slate-700">
+                  {{ otra.folio }} ({{ moneda(otra.total) }})
+                </span>
+              }
+            </div>
           </div>
+        }
+      </div>
+
+      <!-- 3. Modificar Fecha Programada -->
+      <div class="pt-3.5 border-t border-slate-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+          <label
+            for="inputFechaProgramadaPago"
+            class="text-xs font-semibold uppercase tracking-wider text-slate-700">
+            Fecha Programada de Pago
+          </label>
+          <span class="text-xs text-slate-500 font-medium">
+            Plazo: {{ diasFijosProveedor() }} días ({{ diasCreditoInfo().origen === 'xml' ? 'En XML' : 'Catálogo' }})
+          </span>
+        </div>
+
+        <form (ngSubmit)="guardarFechaProgramadaPago()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input
+            id="inputFechaProgramadaPago"
+            type="date"
+            name="fechaProgramadaPago"
+            [ngModel]="fechaProgramadaInput()"
+            (ngModelChange)="fechaProgramadaInput.set($event)"
+            class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm font-medium text-slate-900 bg-white focus:border-slate-900 outline-none transition" />
+
+          <button
+            type="submit"
+            [disabled]="guardandoFechaPago()"
+            class="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap">
+            @if (guardandoFechaPago()) {
+              <span class="btn-inline-spinner" aria-hidden="true"></span>
+              <span>Guardando...</span>
+            } @else {
+              <span>Guardar Fecha</span>
+            }
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Aviso Vencida -->
+    @if (vencimiento(); as v) {
+      @if (v.vencida && f.estado.toLowerCase() !== 'pagado') {
+        <div class="alert-vencida" role="alert">
+          <strong>Factura vencida:</strong> El plazo terminó el {{ f.fechaProgramacionPago }} (hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}).
+        </div>
+      }
+    }
+
+    <!-- 1. Detalle de Factura -->
+    <div class="card">
+      <h2 class="card-title">Detalle de la Factura</h2>
+      <div class="total-box">
+        <span class="total-label">Total ({{ f.moneda || 'MXN' }})</span>
+        <span class="total-value">{{ moneda(f.total) }} {{ f.moneda || 'MXN' }}</span>
+      </div>
+      <dl class="info-grid">
+        <div class="info-item"><dt>Folio Factura</dt><dd class="font-semibold">{{ f.folio }}</dd></div>
+        <div class="info-item">
+          <dt>Folio de Contrarrecibo</dt>
+          <dd class="mono font-semibold">{{ f.folioContrarrecibo ? '#' + f.folioContrarrecibo : 'Sin asignar' }}</dd>
+        </div>
+        <div class="info-item"><dt>UUID Fiscal</dt><dd class="mono">{{ f.uuid || '—' }}</dd></div>
+        <div class="info-item"><dt>N° de Proveedor</dt><dd class="mono font-semibold">#{{ f.codigoProveedor }}</dd></div>
+        <div class="info-item"><dt>Razón Social Proveedor</dt><dd>{{ f.nombreProveedor }}</dd></div>
+        <div class="info-item"><dt>RFC Emisor</dt><dd class="mono">{{ f.rfcEmisor }}</dd></div>
+        <div class="info-item"><dt>Fecha Emisión</dt><dd>{{ f.fechaEmision || '—' }}</dd></div>
+        <div class="info-item"><dt>Fecha Recepción XML</dt><dd>{{ f.fechaRevision || '—' }}</dd></div>
+      </dl>
+    </div>
+
+    <!-- 2. Información Fiscal -->
+    <div class="card">
+      <h2 class="card-title">Información Fiscal CFDI</h2>
+
+      <div class="amounts">
+        <div class="amount-row"><span>Subtotal</span><span class="font-mono">{{ f.subTotal != null ? moneda(f.subTotal) : '—' }}</span></div>
+        <div class="amount-row">
+          <span>Impuestos</span>
+          <span class="font-mono">{{ impuestos() != null ? moneda(impuestos()) : '—' }}</span>
+        </div>
+        <div class="amount-row total"><span>Total</span><span class="font-mono">{{ moneda(f.total) }}</span></div>
+      </div>
+
+      <dl class="info-grid">
+        <div class="info-item"><dt>Régimen Emisor</dt><dd>{{ regimen(f.regimenEmisor) }}</dd></div>
+        <div class="info-item"><dt>Régimen Receptor</dt><dd>{{ regimen(f.regimenReceptor) }}</dd></div>
+        <div class="info-item"><dt>Uso de CFDI</dt><dd>{{ uso(f.usoCfdi) }}</dd></div>
+      </dl>
+
+      <h3 class="section-subtitle">Comprobaciones Fiscales</h3>
+      <ul class="checks-list">
+        @for (c of checks(); track c.etiqueta) {
+          <li class="check-item" [class.pass]="c.ok">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="c.ok" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              <path *ngIf="!c.ok" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span><strong>{{ c.etiqueta }}:</strong> {{ c.valor }}</span>
+          </li>
+        }
+      </ul>
+
+      @if (f.motivoRechazo) {
+        <div class="error-box">
+          <strong>Motivo de rechazo:</strong>
+          <p>{{ f.motivoRechazo }}</p>
         </div>
       }
     </div>
 
-    <!-- 3. Modificar ÚNICAMENTE Fecha Programada de Pago (Días de Crédito se quedan fijos al proveedor) -->
-    <div class="pt-4 border-t border-slate-100">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-        <label
-          for="inputFechaProgramadaPago"
-          class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-          <span>📅 Modificar Fecha Programada de Pago</span>
-        </label>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
-          🔒 Plazo de crédito: {{ diasFijosProveedor() }} días
-          ({{ diasCreditoInfo().origen === 'xml' ? 'En XML' : 'Lista de Proveedores' }})
-        </span>
-      </div>
+    <!-- 3. Condiciones Comerciales -->
+    <div class="card">
+      <h2 class="card-title">Condiciones Comerciales</h2>
+      <dl class="info-grid">
+        <div class="info-item"><dt>Condición de pago</dt><dd>{{ esCredito() ? 'Crédito / Diferido (PPD)' : 'Una sola exhibición (PUE)' }}</dd></div>
+        <div class="info-item"><dt>Método de pago</dt><dd>{{ metodo(f.metodoPago) }}</dd></div>
+        <div class="info-item"><dt>Forma de pago</dt><dd>{{ forma(f.formaPago) }}</dd></div>
+        <div class="info-item">
+          <dt>Plazo de Crédito (Fijo)</dt>
+          <dd class="font-semibold" [class.text-rose-700]="sinDiasEnXmlNiEnListaProveedores()">
+            {{
+              sinDiasEnXmlNiEnListaProveedores()
+                ? 'No especificado en XML ni en lista'
+                : diasFijosProveedor() + ' días (' + (diasCreditoInfo().origen === 'xml' ? 'En XML' : 'Catálogo') + ')'
+            }}
+          </dd>
+        </div>
+        <div class="info-item">
+          <dt>Condiciones de Pago en XML</dt>
+          <dd>
+            {{
+              diasEnXml() !== null
+                ? f.condicionesPago + ' (' + diasEnXml() + ' días)'
+                : (f.condicionesPago
+                    ? f.condicionesPago + ' (sin días en XML)'
+                    : 'Sin atributo CondicionesDePago en XML')
+            }}
+          </dd>
+        </div>
+        <div class="info-item">
+          <dt>Fecha Límite de Pago</dt>
+          <dd [class.text-rose-700]="vencimiento()?.vencida" class="font-medium">{{ f.fechaProgramacionPago || '—' }}</dd>
+        </div>
+      </dl>
 
-      <p class="text-xs text-slate-500 mb-3">
-        Los días de crédito permanecen fijos (1° XML → 2° Lista de Proveedores). Aquí puedes cambiar únicamente la fecha de pago según el día en que se envió la factura a revisión.
-      </p>
-
-      <form (ngSubmit)="guardarFechaProgramadaPago()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-        <input
-          id="inputFechaProgramadaPago"
-          type="date"
-          name="fechaProgramadaPago"
-          [ngModel]="fechaProgramadaInput()"
-          (ngModelChange)="fechaProgramadaInput.set($event)"
-          class="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-
-        <button
-          type="submit"
-          [disabled]="guardandoFechaPago()"
-          class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-xs transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
-          @if (guardandoFechaPago()) {
-            <span class="btn-inline-spinner" aria-hidden="true"></span>
-            <span>Guardando...</span>
+      @if (vencimiento(); as v) {
+        <div class="plazo" [class.vencido]="v.vencida && f.estado.toLowerCase() !== 'pagado'">
+          @if (f.estado.toLowerCase() === 'pagado') {
+            Factura saldada.
+          } @else if (v.vencida) {
+            Vencida hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}.
+          } @else if (f.estado.toLowerCase() === 'vencido') {
+            Factura vencida manualmente.
+          } @else if (!esCredito()) {
+            Factura PUE: sin plazo pendiente.
+          } @else if (v.diasRestantes === 0) {
+            Vence hoy.
           } @else {
-            <span>💾 Guardar Fecha de Pago</span>
+            Vence en {{ v.diasRestantes }} {{ v.diasRestantes === 1 ? 'día' : 'días' }}.
           }
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Aviso de factura vencida -->
-  @if (vencimiento(); as v) {
-  @if (v.vencida && f.estado.toLowerCase() !== 'pagado') {
-  <div class="alert-vencida" role="alert">
-    <strong>Factura vencida.</strong>
-    El plazo de crédito terminó el {{ f.fechaProgramacionPago }}
-    (hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}). Programa el pago a la brevedad.
-  </div>
-  }
-  }
-
-  <!-- 1. Detalle de la factura -->
-  <div class="card">
-    <h2 class="card-title">Detalle de la factura</h2>
-    <div class="total-box">
-      <span class="total-label">Monto total ({{ f.moneda === 'USD' ? 'Dólares USD' : 'Pesos MXN' }})</span>
-      <span class="total-value">{{ moneda(f.total) }} {{ f.moneda || 'MXN' }}</span>
-    </div>
-    <dl class="info-grid">
-      <div class="info-item"><dt>Folio Factura</dt><dd class="font-semibold">{{ f.folio }}</dd></div>
-      <div class="info-item">
-        <dt>Folio de Contrarrecibo</dt>
-        <dd class="mono font-bold text-indigo-700">{{ f.folioContrarrecibo ? '#' + f.folioContrarrecibo : 'Sin asignar' }}</dd>
-      </div>
-      <div class="info-item"><dt>UUID (folio fiscal)</dt><dd class="mono">{{ f.uuid || '—' }}</dd></div>
-      <div class="info-item"><dt>N° de Proveedor (Clave)</dt><dd class="mono"><strong>#{{ f.codigoProveedor }}</strong></dd></div>
-      <div class="info-item"><dt>Razón Social del Proveedor</dt><dd>{{ f.nombreProveedor }}</dd></div>
-      <div class="info-item"><dt>RFC emisor</dt><dd>{{ f.rfcEmisor }}</dd></div>
-      <div class="info-item"><dt>Fecha de emisión</dt><dd>{{ f.fechaEmision || '—' }}</dd></div>
-      <div class="info-item"><dt>Fecha de recepción del XML</dt><dd>{{ f.fechaRevision || '—' }}</dd></div>
-    </dl>
-  </div>
-
-  <!-- 2. Desglose de información fiscal -->
-  <div class="card">
-    <h2 class="card-title">Desglose de información fiscal</h2>
-
-    <div class="amounts">
-      <div class="amount-row"><span>Subtotal</span><span>{{ f.subTotal != null ? moneda(f.subTotal) : '—' }}</span></div>
-      <div class="amount-row">
-        <span>Impuestos (total − subtotal)</span>
-        <span>{{ impuestos() != null ? moneda(impuestos()) : '—' }}</span>
-      </div>
-      <div class="amount-row total"><span>Total</span><span>{{ moneda(f.total) }}</span></div>
-    </div>
-
-    <dl class="info-grid">
-      <div class="info-item"><dt>Régimen fiscal del emisor</dt><dd>{{ regimen(f.regimenEmisor) }}</dd></div>
-      <div class="info-item"><dt>Régimen fiscal del receptor</dt><dd>{{ regimen(f.regimenReceptor) }}</dd></div>
-      <div class="info-item"><dt>Uso de CFDI</dt><dd>{{ uso(f.usoCfdi) }}</dd></div>
-    </dl>
-
-    <h3 class="section-subtitle">Comprobaciones fiscales del CFDI</h3>
-    <ul class="checks-list">
-      @for (c of checks(); track c.etiqueta) {
-      <li class="check-item" [class.pass]="c.ok">
-        <span class="check-icon">{{ c.ok ? '✓' : '✕' }}</span>
-        <span><strong>{{ c.etiqueta }}:</strong> {{ c.valor }}</span>
-      </li>
-      }
-    </ul>
-
-    @if (f.motivoRechazo) {
-    <div class="error-box">
-      <strong>Motivo de rechazo:</strong>
-      <p>{{ f.motivoRechazo }}</p>
-    </div>
-    }
-  </div>
-
-  <!-- 3. Condiciones comerciales -->
-  <div class="card">
-    <h2 class="card-title">Condiciones comerciales</h2>
-    <dl class="info-grid">
-      <div class="info-item"><dt>Condición de pago</dt><dd>{{ esCredito() ? 'Crédito / Diferido (PPD)' : 'Una sola exhibición (PUE)' }}</dd></div>
-      <div class="info-item"><dt>Método de pago</dt><dd>{{ metodo(f.metodoPago) }}</dd></div>
-      <div class="info-item"><dt>Forma de pago</dt><dd>{{ forma(f.formaPago) }}</dd></div>
-      <div class="info-item">
-        <dt>Plazo de crédito (Fijo)</dt>
-        <dd class="font-bold" [class.text-danger]="sinDiasEnXmlNiEnListaProveedores()">
-          {{
-            sinDiasEnXmlNiEnListaProveedores()
-              ? '⚠️ No especificado en XML ni en Lista de Proveedores'
-              : diasFijosProveedor() + ' días (' + (diasCreditoInfo().origen === 'xml' ? 'En XML' : 'Lista de Proveedores') + ')'
-          }}
-        </dd>
-      </div>
-      <div class="info-item">
-        <dt>Días de crédito en XML (&lt;cfdi:Comprobante CondicionesDePago&gt;)</dt>
-        <dd [ngClass]="diasEnXml() === null ? 'text-amber-700 font-semibold' : ''">
-          {{
-            diasEnXml() !== null
-              ? f.condicionesPago + ' (' + diasEnXml() + ' días)'
-              : (f.condicionesPago
-                  ? f.condicionesPago + ' (sin días en el XML)'
-                  : '⚠️ No hay días de crédito en XML (Falta atributo CondicionesDePago en cfdi:Comprobante)')
-          }}
-        </dd>
-      </div>
-      <div class="info-item">
-        <dt>Fecha límite de pago</dt>
-        <dd [class.text-danger]="vencimiento()?.vencida">{{ f.fechaProgramacionPago || '—' }}</dd>
-      </div>
-    </dl>
-
-    @if (vencimiento(); as v) {
-    <div class="plazo" [class.vencido]="v.vencida && f.estado.toLowerCase() !== 'pagado'">
-      @if (f.estado.toLowerCase() === 'pagado') {
-      Factura saldada.
-      } @else if (v.vencida) {
-      Vencida hace {{ v.diasVencida }} {{ v.diasVencida === 1 ? 'día' : 'días' }}
-      } @else if (f.estado.toLowerCase() === 'vencido') {
-      Factura rechazada/vencida manualmente.
-      } @else if (!esCredito()) {
-      Factura PUE (Una sola exhibición): sin plazo pendiente
-      } @else if (v.diasRestantes === 0) {
-      Vence hoy
-      } @else {
-      Vence en {{ v.diasRestantes }} {{ v.diasRestantes === 1 ? 'día' : 'días' }}
+        </div>
       }
     </div>
-    }
-  </div>
   }
 </section>

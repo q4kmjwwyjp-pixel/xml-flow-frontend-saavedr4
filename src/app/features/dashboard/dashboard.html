@@ -1,117 +1,143 @@
 <div class="dashboard-wrapper page-transition-enter">
-  <!-- Encabezado -->
+  <!-- Encabezado Principal -->
   <header class="dashboard-header">
     <div class="header-info">
-      <div class="flex items-center gap-3.5 mb-1.5">
+      <div class="flex items-center gap-3 mb-2">
         <img
           src="logo-vexel.png?v=3"
           alt="Logo VEXEL"
-          class="w-14 h-14 object-contain drop-shadow-sm shrink-0"
+          class="w-10 h-10 object-contain shrink-0"
         >
         <div>
-          <div class="flex items-center gap-2 mb-0.5">
-            <span class="text-xs font-extrabold tracking-widest uppercase px-2.5 py-0.5 rounded-md bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-bold tracking-widest uppercase text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
               VEXEL
             </span>
+            <span class="text-xs text-slate-400">&bull;</span>
+            <h1 class="inline-block text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              Dashboard de Operaciones y Pagos
+            </h1>
           </div>
-          <h1>Dashboard de Operaciones y Pagos</h1>
         </div>
       </div>
       <p class="subtitle">
-        Revisión Fiscal CFDI 4.0 | Empresa Receptora: <strong>Transportes de los santos e hijos (TSH7311116TL4)</strong>
+        Empresa Receptora: <strong class="text-slate-800">Transportes de los santos e hijos (TSH7311116TL4)</strong> &bull; CFDI 4.0
       </p>
-      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px;">
-        <button class="border-2 hover:bg-blue-200 hover:border-white border-blue-300 bg-white rounded-md px-4 py-2 font-semibold cursor-pointer transition"
-          (click)="goUploadPage()">Escanear XML 📄</button>
-        <button routerLink="/reportes-semanales"
-          class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 shadow-sm cursor-pointer transition">
-          📊 Generador de Reportes Semanales
+
+      <!-- Botones de Acción Rápidos -->
+      <div class="flex flex-wrap items-center gap-2.5 mt-3.5">
+        <button
+          (click)="goUploadPage()"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 transition cursor-pointer shadow-xs">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Escanear XML
         </button>
-        <button (click)="irAProveedores()"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md px-4 py-2 shadow-sm flex items-center gap-2 cursor-pointer transition">
-          👥 Directorio de Proveedores
+
+        <button
+          routerLink="/reportes-semanales"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 transition cursor-pointer shadow-xs">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Generador de Reportes
+        </button>
+
+        <button
+          (click)="irAProveedores()"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 transition cursor-pointer shadow-xs">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+          Directorio de Proveedores
         </button>
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2.5">
-      <!-- Gafete de usuario activo (Propuesta C) -->
+    <!-- Barra de Perfil y Acciones de Sesión -->
+    <div class="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
       <span
-        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold border shadow-2xs"
-        [ngClass]="
-          authService.esAdmin()
-            ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
-            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-        ">
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-white text-slate-700 border-slate-200">
+        <span class="w-2 h-2 rounded-full" [ngClass]="authService.esAdmin() ? 'bg-indigo-500' : 'bg-emerald-500'"></span>
         {{ authService.etiquetaUsuario() }}
       </span>
 
-      <!-- Interruptor Admin: Mostrar / Ocultar Pruebas (Propuesta B) -->
-      <button
-        *ngIf="authService.esAdmin()"
-        type="button"
-        (click)="alternarVistaPruebas()"
-        class="px-3.5 py-2 rounded-lg text-xs font-bold border transition cursor-pointer"
-        [ngClass]="
-          authService.mostrarDatosPrueba()
-            ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
-            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-        "
-        title="Alterna entre ver los XMLs de prueba o ver la pantalla limpia como la ve Daniela">
-        {{
-          authService.mostrarDatosPrueba()
-            ? '🧪 Pruebas: Visibles (Clic para Vista Daniela)'
-            : '👁️ Vista como Daniela (Pruebas Ocultas)'
-        }}
-      </button>
+      <!-- Interruptor Admin: Modo Pruebas -->
+      @if (authService.esAdmin()) {
+        <button
+          type="button"
+          (click)="alternarVistaPruebas()"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer"
+          [ngClass]="
+            authService.mostrarDatosPrueba()
+              ? 'bg-amber-50 text-amber-800 border-amber-300'
+              : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+          "
+          title="Alterna entre ver comprobantes de prueba o ver el entorno operativo limpio">
+          <span class="w-1.5 h-1.5 rounded-full" [ngClass]="authService.mostrarDatosPrueba() ? 'bg-amber-500' : 'bg-slate-400'"></span>
+          {{ authService.mostrarDatosPrueba() ? 'Pruebas: Visibles' : 'Vista Daniela (Limpia)' }}
+        </button>
+      }
 
       <button
         type="button"
         (click)="cerrarSesion()"
-        class="bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300 font-semibold rounded-lg px-4 py-2.5 shadow-xs flex items-center gap-2 transition cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 transition cursor-pointer">
+        <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
           </path>
         </svg>
-        Cerrar Sesión
+        Salir
       </button>
     </div>
   </header>
 
+  <!-- Loader -->
   <div *ngIf="cargando()" class="app-loader-card" role="status" aria-live="polite">
     <div class="app-spinner-wrapper" aria-hidden="true">
       <div class="app-spinner-ring"></div>
       <div class="app-spinner-dot"></div>
     </div>
     <h2 class="app-loader-title">Cargando información operativa...</h2>
-    <p class="app-loader-subtitle">Sincronizando comprobantes CFDI 4.0 recientes con el servidor.</p>
+    <p class="app-loader-subtitle">Sincronizando comprobantes CFDI 4.0 con el servidor.</p>
   </div>
 
   <div *ngIf="!cargando()">
     <!-- Tarjetas de Métricas -->
     <section class="metrics-grid" *ngIf="metricas">
-      <div class="metric-card total">
+      <div class="metric-card">
         <span class="metric-title">Facturas Escaneadas (24h)</span>
         <span class="metric-value">{{ metricas.totalRevisadas }}</span>
       </div>
-      <div class="metric-card success">
-        <span class="metric-title">Facturas a crédito pendientes</span>
-        <span class="metric-value">{{ metricas.totalProgramadas }}</span>
+      <div class="metric-card">
+        <span class="metric-title">Facturas a Crédito Pendientes</span>
+        <span class="metric-value text-slate-800">{{ metricas.totalProgramadas }}</span>
       </div>
-      <div class="metric-card alert">
+      <div class="metric-card">
         <span class="metric-title">Pagos Programados para Hoy</span>
-        <span class="metric-value">{{ metricas.pagosProgramadosHoy }}</span>
+        <span class="metric-value" [ngClass]="metricas.pagosProgramadosHoy > 0 ? 'text-amber-700' : 'text-slate-800'">
+          {{ metricas.pagosProgramadosHoy }}
+        </span>
       </div>
     </section>
 
     <!-- Tabla de Facturas Recientes -->
     <section class="table-section">
       <div class="table-header">
-        <h2>XMLs Escaneados en las últimas 24 horas</h2>
-        <button [routerLink]="['/pagos-programados']" [queryParams]="{ origen: 'dashboard' }"
-          class="btn btn-primary bg-blue-500 hover:bg-blue-600 text-white mb-5">
-          Ver todos los pagos pendientes 🔍
+        <div>
+          <h2>Comprobantes XML Escaneados (Últimas 24 horas)</h2>
+          <span class="text-xs text-slate-500">Muestra los CFDI validados recientemente</span>
+        </div>
+        <button
+          [routerLink]="['/pagos-programados']"
+          [queryParams]="{ origen: 'dashboard' }"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer">
+          Ver todos los pagos programados
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
         </button>
       </div>
 
@@ -123,8 +149,8 @@
               <th>Proveedor</th>
               <th>Condición</th>
               <th>Crédito</th>
-              <th>Fecha Pago Programada 📆</th>
-              <th>Total 💵</th>
+              <th>Fecha Programada</th>
+              <th style="text-align: right;">Total (MXN)</th>
               <th>Estado</th>
               <th>Acción</th>
             </tr>
@@ -135,42 +161,44 @@
               <td>
                 <div class="provider-info">
                   <span class="provider-name">{{ f.nombreProveedor }}</span>
-                  <span class="provider-rfc">N° Prov: #{{ f.codigoProveedor }} · RFC: {{ f.rfcEmisor }}</span>
+                  <span class="provider-rfc">#{{ f.codigoProveedor }} &bull; RFC: {{ f.rfcEmisor }}</span>
                 </div>
               </td>
               <td>
                 <span class="badge-method" [ngClass]="f.metodoPago.toLowerCase()">
-                  {{ f.metodoPago === 'PUE' ? 'PUE (Una exhibición)' : 'PPD (Crédito)' }}
+                  {{ f.metodoPago === 'PUE' ? 'PUE' : 'PPD (Crédito)' }}
                 </span>
               </td>
-              <td>{{ f.diasCredito ? f.diasCredito + ' días nat.' : 'N/A' }}</td>
+              <td class="text-xs text-slate-600">{{ f.diasCredito ? f.diasCredito + ' días' : '—' }}</td>
               <td>
                 <div class="due-date-info">
-                  <strong>{{ f.fechaProgramacionPago || 'N/A' }}</strong>
+                  <span class="font-medium">{{ f.fechaProgramacionPago || '—' }}</span>
                   <span *ngIf="esPagoHoy(f.fechaProgramacionPago) && f.estado === 'pendiente'"
                     class="badge-tag warning">
-                    ¡Pagar hoy!
+                    Hoy
                   </span>
                 </div>
               </td>
               <td class="cell-amount">{{ f.total | currency:'MXN':'symbol':'1.2-2' }}</td>
               <td>
                 <span [ngClass]="'status-badge ' + f.estado.toLowerCase()">
-                  {{ f.estado | uppercase }}
+                  {{ f.estado }}
                 </span>
               </td>
               <td>
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <button (click)="verDetalleXml(f)" class="btn-detail">
-                    Ver Auditoría
+                    Auditoría
                   </button>
                   <button
                     *ngIf="authService.esAdmin()"
                     type="button"
                     (click)="eliminarXml(f)"
                     title="Eliminar factura XML (Solo Admin)"
-                    class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 text-xs font-bold transition cursor-pointer">
-                    🗑️
+                    class="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
                   </button>
                 </div>
               </td>
@@ -186,17 +214,21 @@
       </div>
     </section>
 
-    <!-- Modal 1: Detalle de Validación Fiscal del Comprobante -->
+    <!-- Modal: Detalle de Validación Fiscal del Comprobante -->
     <div class="modal-backdrop" *ngIf="facturaSeleccionada" (click)="cerrarDetalle()">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h3>Auditoría Fiscal: {{ facturaSeleccionada.folio }}</h3>
-          <button class="btn-close" (click)="cerrarDetalle()">✕</button>
+          <button class="btn-close" (click)="cerrarDetalle()" aria-label="Cerrar modal">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
         </div>
         <div class="modal-body">
           <div class="detail-row">
-            <span class="label">N° de Proveedor (Clave):</span>
-            <span class="val"><strong>#{{ facturaSeleccionada.codigoProveedor }}</strong></span>
+            <span class="label">N° Proveedor (Clave):</span>
+            <span class="val font-mono">#{{ facturaSeleccionada.codigoProveedor }}</span>
           </div>
           <div class="detail-row">
             <span class="label">Proveedor:</span>
@@ -204,7 +236,7 @@
           </div>
           <div class="detail-row">
             <span class="label">RFC Emisor:</span>
-            <span class="val">{{ facturaSeleccionada.rfcEmisor }}</span>
+            <span class="val font-mono">{{ facturaSeleccionada.rfcEmisor }}</span>
           </div>
           <div class="detail-row">
             <span class="label">Fecha Recepción XML:</span>
@@ -213,14 +245,18 @@
           <div class="detail-row">
             <span class="label">Método de pago:</span>
             <span class="val">
-              <strong>{{ facturaSeleccionada.metodoPago }}</strong>
-              {{ facturaSeleccionada.metodoPago === 'PPD' ? '(Pago en Parcialidades o Diferido)' : '(Pago en Una Sola Exhibición)' }}
+              {{ facturaSeleccionada.metodoPago }}
+              <span class="text-xs text-slate-500 font-normal">
+                {{ facturaSeleccionada.metodoPago === 'PPD' ? '(Parcialidades o Diferido)' : '(Una Sola Exhibición)' }}
+              </span>
             </span>
           </div>
           <div class="detail-row">
-            <span class="label">Estado de la factura:</span>
-            <span class="val" [ngClass]="'status-badge ' + facturaSeleccionada.estado.toLowerCase()">
-              {{ facturaSeleccionada.estado | uppercase }}
+            <span class="label">Estado:</span>
+            <span class="val">
+              <span [ngClass]="'status-badge ' + facturaSeleccionada.estado.toLowerCase()">
+                {{ facturaSeleccionada.estado }}
+              </span>
             </span>
           </div>
           <div class="detail-row">
@@ -231,16 +267,24 @@
             <span class="label">Monto a Pagar:</span>
             <span class="val highlight">{{ facturaSeleccionada.total | currency:'MXN':'symbol':'1.2-2' }}</span>
           </div>
-          
-          <h4 class="section-subtitle">Comprobaciones Fiscales del CFDI:</h4>
+
+          <h4 class="section-subtitle">Comprobaciones Fiscales:</h4>
           <div class="checks-list">
             <div class="check-item" [class.pass]="facturaSeleccionada.checksFiscales?.regimenValido">
-              {{ facturaSeleccionada.checksFiscales?.regimenValido ? '✓' : 'X' }} Régimen Fiscal: 624 (Coordinados)
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path *ngIf="facturaSeleccionada.checksFiscales?.regimenValido" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                <path *ngIf="!facturaSeleccionada.checksFiscales?.regimenValido" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              Régimen Fiscal: 624 (Coordinados)
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+          <button
+            class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 transition cursor-pointer"
+            (click)="cerrarDetalle()">
+            Cerrar
+          </button>
         </div>
       </div>
     </div>

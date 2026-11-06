@@ -2,38 +2,42 @@
   <div class="alert-card">
     <div class="alert-card__header">
       <app-logo-xml-flow></app-logo-xml-flow>
-      <span class="alert-card__badge alert-card__badge--error">CFDI rechazado</span>
+      <span class="alert-card__badge alert-card__badge--error">CFDI Rechazado</span>
     </div>
 
-    <div class="alert-card__icon alert-card__icon--error">✕</div>
+    <div class="alert-card__icon alert-card__icon--error">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </div>
 
     <h1 class="alert-card__title">No fue posible validar este comprobante</h1>
     <p class="alert-card__subtitle" *ngIf="resultado() as r">
-      Folio <strong>{{ r.serie ? r.serie + '-' : '' }}{{ r.folio || r.uuid }}</strong> —
+      Folio <strong>{{ r.serie ? r.serie + '-' : '' }}{{ r.folio || r.uuid }}</strong> &bull;
       <span *ngIf="r.proveedor?.codigoProveedor && r.proveedor?.codigoProveedor !== 'S/N'">
-        <strong>Proveedor #{{ r.proveedor.codigoProveedor }}</strong> ·
+        <strong>#{{ r.proveedor.codigoProveedor }}</strong> &bull;
       </span>
       {{ r.proveedor.nombre }}
     </p>
 
     <div class="alert-card__summary" *ngIf="resultado() as r">
       <div>
-        <span>N° de proveedor (Clave)</span>
-        <strong>#{{ r.proveedor?.codigoProveedor || 'S/N' }}</strong>
+        <span>N° Proveedor (Clave)</span>
+        <strong class="font-mono">#{{ r.proveedor?.codigoProveedor || 'S/N' }}</strong>
       </div>
       <div>
-        <span>Razón social proveedor</span>
+        <span>Razón Social</span>
         <strong>{{ r.proveedor?.nombre }}</strong>
       </div>
-      <div><span>RFC proveedor</span><strong>{{ r.proveedor.rfc }}</strong></div>
-      <div><span>Régimen del receptor</span><strong>{{ r.regimenReceptor }}</strong></div>
-      <div><span>Uso de CFDI</span><strong>{{ r.usoCfdi }}</strong></div>
+      <div><span>RFC Emisor</span><strong class="font-mono">{{ r.proveedor.rfc }}</strong></div>
+      <div><span>Régimen Receptor</span><strong>{{ r.regimenReceptor }}</strong></div>
+      <div><span>Uso CFDI</span><strong>{{ r.usoCfdi }}</strong></div>
       <div><span>Total</span><strong>{{ r.total | currency: 'MXN' }}</strong></div>
-      <div><span>Fecha de emisión</span><strong>{{ r.fechaEmision }}</strong></div>
+      <div><span>Fecha Emisión</span><strong>{{ r.fechaEmision }}</strong></div>
     </div>
 
     <div class="alert-card__errores" *ngIf="resultado() as r">
-      <h2>Diagnóstico fiscal detallado</h2>
+      <h2>Diagnóstico fiscal</h2>
 
       <ul *ngIf="r.erroresDetalle?.length">
         <li *ngFor="let err of r.erroresDetalle">
@@ -55,8 +59,7 @@
     </div>
 
     <div class="alert-card__empty" *ngIf="!resultado()">
-      No hay un resultado de validación cargado todavía. Sube un CFDI desde la Pantalla de carga para ver el
-      diagnóstico aquí.
+      No hay un resultado de validación cargado todavía.
     </div>
 
     <div class="alert-card__actions">
@@ -64,7 +67,7 @@
         Intentar de nuevo
       </button>
       <button class="alert-card__btn alert-card__btn--ghost" (click)="irADashboard()">
-        Volver al dashboard
+        Volver al Dashboard
       </button>
     </div>
   </div>

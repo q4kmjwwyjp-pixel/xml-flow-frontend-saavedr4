@@ -1,27 +1,29 @@
 <div class="reporte-page-wrapper page-transition-enter">
-  <!-- BARRA SUPERIOR DE NAVEGACIÓN Y EXPORTACIÓN EXCEL (SIN BOTÓN PDF) -->
+  <!-- BARRA SUPERIOR DE NAVEGACIÓN Y EXPORTACIÓN -->
   <header class="top-action-bar">
     <div class="nav-left">
       <a routerLink="/dashboard" class="btn btn-back">
-        ← Regresar al Dashboard
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Dashboard
       </a>
       <a
         [routerLink]="['/pagos-programados']"
         [queryParams]="{ origen: 'reportes' }"
         [state]="{ origen: 'reportes' }"
         class="btn btn-outline">
-        📅 Ir a Pagos Programados
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        Pagos Programados
       </a>
     </div>
 
     <div class="actions-right">
       <span
-        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border"
-        [ngClass]="
-          authService.esAdmin()
-            ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
-            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-        ">
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border bg-white text-slate-700 border-slate-200">
+        <span class="w-2 h-2 rounded-full" [ngClass]="authService.esAdmin() ? 'bg-indigo-500' : 'bg-emerald-500'"></span>
         {{ authService.etiquetaUsuario() }}
       </span>
 
@@ -29,17 +31,14 @@
         <button
           type="button"
           (click)="alternarVistaPruebas()"
-          class="px-3 py-2 rounded-lg text-xs font-bold border transition cursor-pointer"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer"
           [ngClass]="
             authService.mostrarDatosPrueba()
-              ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
-              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              ? 'bg-amber-50 text-amber-800 border-amber-300'
+              : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
           ">
-          {{
-            authService.mostrarDatosPrueba()
-              ? '🧪 Pruebas: Visibles'
-              : '👁️ Vista como Daniela'
-          }}
+          <span class="w-1.5 h-1.5 rounded-full" [ngClass]="authService.mostrarDatosPrueba() ? 'bg-amber-500' : 'bg-slate-400'"></span>
+          {{ authService.mostrarDatosPrueba() ? 'Pruebas: Visibles' : 'Vista Daniela (Limpia)' }}
         </button>
       }
 
@@ -49,37 +48,44 @@
         (click)="cargarFacturas()"
         [disabled]="cargando()"
         title="Actualizar datos desde el servidor">
-        🔄 {{ cargando() ? 'Actualizando...' : 'Actualizar Datos' }}
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        {{ cargando() ? 'Actualizando...' : 'Actualizar' }}
       </button>
+
       <button
         type="button"
         class="btn btn-excel"
         (click)="exportarExcel()"
         [disabled]="filasVistaPrevia.length === 0">
-        📥 Exportar a Excel (.XLSX)
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        Exportar Excel (.XLSX)
       </button>
     </div>
   </header>
 
-  <!-- SECCIÓN SUPERIOR DE FILTROS (CONSERVADA) -->
+  <!-- SECCIÓN DE FILTROS -->
   <section class="filter-card" aria-label="Filtros del generador de reportes">
     <div class="filter-card-header">
       <div>
-        <h2 class="filter-title">🎛️ Parámetros del Reporte Semanal y Contable</h2>
+        <h2 class="filter-title">Parámetros del Reporte Semanal y Contable</h2>
         <p class="filter-subtitle">
-          Filtra por periodo de pago, proveedor, estado o moneda para previsualizar y exportar las facturas agrupadas por Folio de Contrarrecibo.
+          Filtra por periodo de pago, proveedor, estado o moneda para previsualizar y exportar facturas por Folio de Contrarrecibo.
         </p>
       </div>
 
       <!-- Botones rápidos de periodo -->
       <div class="quick-periods">
-        <span class="quick-label">Periodo rápido:</span>
+        <span class="quick-label">Periodo:</span>
         <button
           type="button"
           class="chip-btn"
           [class.active]="periodoActivo === 'ESTA_SEMANA'"
           (click)="seleccionarPeriodoRapido('ESTA_SEMANA')">
-          Esta Semana (Lun-Dom)
+          Esta Semana
         </button>
         <button
           type="button"
@@ -93,7 +99,7 @@
           class="chip-btn"
           [class.active]="periodoActivo === 'PROXIMA_SEMANA'"
           (click)="seleccionarPeriodoRapido('PROXIMA_SEMANA')">
-          Próxima Semana (Pagos a programar)
+          Próxima Semana
         </button>
         <button
           type="button"
@@ -107,7 +113,7 @@
           class="chip-btn"
           [class.active]="periodoActivo === 'TODO'"
           (click)="seleccionarPeriodoRapido('TODO')">
-          Ver Todo
+          Todo
         </button>
       </div>
     </div>
@@ -115,21 +121,21 @@
     <div class="filter-grid">
       <!-- Selector del criterio de fecha -->
       <div class="field-group">
-        <label for="criterioFecha">📌 Criterio de Fecha</label>
+        <label for="criterioFecha">Criterio de Fecha</label>
         <select
           id="criterioFecha"
           [(ngModel)]="criterioFecha"
           (change)="aplicarFiltros()"
           class="form-input">
           <option value="programacion">Fecha Programada de Pago (Tesorería)</option>
-          <option value="emision">Fecha de Emisión del CFDI (Contabilidad)</option>
-          <option value="recepcion">Fecha de Recepción/Escaneo</option>
+          <option value="emision">Fecha de Emisión CFDI (Contabilidad)</option>
+          <option value="recepcion">Fecha de Recepción / Escaneo</option>
         </select>
       </div>
 
       <!-- Fecha Inicio -->
       <div class="field-group">
-        <label for="fechaInicio">🗓️ Fecha Inicio (Desde)</label>
+        <label for="fechaInicio">Fecha Inicio</label>
         <input
           id="fechaInicio"
           type="date"
@@ -140,7 +146,7 @@
 
       <!-- Fecha Fin -->
       <div class="field-group">
-        <label for="fechaFin">🗓️ Fecha Fin (Hasta)</label>
+        <label for="fechaFin">Fecha Fin</label>
         <input
           id="fechaFin"
           type="date"
@@ -151,28 +157,28 @@
 
       <!-- Estado -->
       <div class="field-group">
-        <label for="filtroEstado">🏷️ Estado de Factura</label>
+        <label for="filtroEstado">Estado de Factura</label>
         <select
           id="filtroEstado"
           [(ngModel)]="filtroEstado"
           (change)="aplicarFiltros()"
           class="form-input">
           <option value="TODOS">Todos los estados</option>
-          <option value="pendiente">🟡 Pendiente (En plazo)</option>
-          <option value="pagado">🟢 Pagado / Liquidado</option>
-          <option value="vencido">🔴 Vencido / Exigible</option>
+          <option value="pendiente">Pendiente (En plazo)</option>
+          <option value="pagado">Pagado / Liquidado</option>
+          <option value="vencido">Vencido / Exigible</option>
         </select>
       </div>
 
       <!-- Condición / Método SAT -->
       <div class="field-group">
-        <label for="filtroCondicion">💳 Método de Pago SAT</label>
+        <label for="filtroCondicion">Método de Pago SAT</label>
         <select
           id="filtroCondicion"
           [(ngModel)]="filtroCondicion"
           (change)="aplicarFiltros()"
           class="form-input">
-          <option value="TODAS">Todas las facturas (PPD y PUE)</option>
+          <option value="TODAS">Todas (PPD y PUE)</option>
           <option value="PPD">PPD - Parcialidades o Diferido</option>
           <option value="PUE">PUE - Una sola exhibición</option>
         </select>
@@ -180,7 +186,7 @@
 
       <!-- Moneda -->
       <div class="field-group">
-        <label for="filtroMoneda">💱 Moneda</label>
+        <label for="filtroMoneda">Moneda</label>
         <select
           id="filtroMoneda"
           [(ngModel)]="filtroMoneda"
@@ -194,7 +200,7 @@
 
       <!-- Proveedor específico -->
       <div class="field-group">
-        <label for="filtroProveedor">🏢 Proveedor Emisor</label>
+        <label for="filtroProveedor">Proveedor Emisor</label>
         <select
           id="filtroProveedor"
           [(ngModel)]="filtroProveedorRfc"
@@ -209,20 +215,20 @@
 
       <!-- Filtro de Folio Contrarrecibo -->
       <div class="field-group">
-        <label for="filtroContrarrecibo">🧾 Filtro Contrarrecibo</label>
+        <label for="filtroContrarrecibo">Filtro Contrarrecibo</label>
         <select
           id="filtroContrarrecibo"
           [(ngModel)]="filtroContrarrecibo"
           (change)="aplicarFiltros()"
           class="form-input">
-          <option value="CON_CONTRARRECIBO">Solo con Folio de Contrarrecibo</option>
+          <option value="CON_CONTRARRECIBO">Solo con Contrarrecibo</option>
           <option value="TODAS">Todas las facturas</option>
         </select>
       </div>
 
       <!-- Orden por Folio Contrarrecibo -->
       <div class="field-group">
-        <label for="ordenFolio">🔃 Orden de Contrarrecibo</label>
+        <label for="ordenFolio">Orden Contrarrecibo</label>
         <select
           id="ordenFolio"
           [(ngModel)]="ordenFolio"
@@ -235,17 +241,17 @@
 
       <!-- Búsqueda libre -->
       <div class="field-group search-span">
-        <label for="busquedaReporte">🔍 Búsqueda por Folio Contrarrecibo, Factura o RFC</label>
+        <label for="busquedaReporte">Búsqueda rápida</label>
         <div class="search-row">
           <input
             id="busquedaReporte"
             type="text"
             [(ngModel)]="busquedaTexto"
             (input)="aplicarFiltros()"
-            placeholder="Ej. 338746, A-456, RFC o razón social..."
+            placeholder="Buscar por contrarrecibo, factura, RFC o proveedor..."
             class="form-input" />
           <button type="button" class="btn btn-clear" (click)="limpiarFiltros()">
-            Limpiar filtros
+            Limpiar
           </button>
         </div>
       </div>
@@ -266,49 +272,51 @@
 
   @if (errorCarga()) {
     <div class="error-banner">
-      <strong>⚠️ Error de conexión:</strong> {{ errorCarga() }}
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" stroke-width="2"/>
+          <line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/>
+          <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+        </svg>
+        <span><strong>Error:</strong> {{ errorCarga() }}</span>
+      </div>
       <button type="button" class="btn btn-outline" (click)="cargarFacturas()">Reintentar</button>
     </div>
   }
 
-  <!-- NUEVA SECCIÓN: VISTA PREVIA DINÁMICA AGRUPADA POR FOLIO DE CONTRARRECIBO -->
+  <!-- VISTA PREVIA AGRUPADA POR FOLIO DE CONTRARRECIBO -->
   @if (!cargando()) {
-    <section class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+    <section class="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
       <!-- Barra informativa de la Vista Previa -->
-      <div class="px-6 py-4 bg-slate-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="px-5 py-3.5 bg-slate-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <div class="flex items-center gap-2">
-            <span class="px-2.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-bold uppercase tracking-wider">
-              Vista Previa Dinámica
-            </span>
-            <h2 class="text-lg font-bold text-white">
-              Relación de Facturas Agrupadas por Folio de Contrarrecibo
-            </h2>
-          </div>
-          <p class="text-xs text-slate-300 mt-1">
-            Las facturas que comparten el mismo Folio de Contrarrecibo se agrupan en bloques consecutivos. El archivo Excel exportado respeta exactamente este orden y formato.
+          <h2 class="text-sm font-bold text-white tracking-tight">
+            Relación de Facturas por Folio de Contrarrecibo
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Orden y formato sincronizados con el archivo Excel exportable.
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 text-xs">
-          <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
-            <span class="text-slate-400 block">Facturas en vista previa</span>
-            <strong class="text-sm text-white font-mono">{{ filasVistaPrevia.length }}</strong>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <div class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/80">
+            <span class="text-[11px] text-slate-400 block">Facturas</span>
+            <strong class="text-xs text-white font-mono">{{ filasVistaPrevia.length }}</strong>
           </div>
-          <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
-            <span class="text-slate-400 block">Contrarrecibos únicos</span>
-            <strong class="text-sm text-indigo-300 font-mono">{{ totalGruposContrarrecibo }}</strong>
+          <div class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/80">
+            <span class="text-[11px] text-slate-400 block">Contrarrecibos</span>
+            <strong class="text-xs text-slate-200 font-mono">{{ totalGruposContrarrecibo }}</strong>
           </div>
-          <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
-            <span class="text-slate-400 block">Total MXN</span>
-            <strong class="text-sm text-emerald-400 font-mono">
+          <div class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/80">
+            <span class="text-[11px] text-slate-400 block">Total MXN</span>
+            <strong class="text-xs text-slate-100 font-mono">
               {{ totalMontoMxn | currency:'MXN':'symbol':'1.2-2' }}
             </strong>
           </div>
           @if (totalMontoUsd > 0) {
-            <div class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700">
-              <span class="text-slate-400 block">Total USD</span>
-              <strong class="text-sm text-amber-300 font-mono">
+            <div class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/80">
+              <span class="text-[11px] text-slate-400 block">Total USD</span>
+              <strong class="text-xs text-amber-200 font-mono">
                 {{ totalMontoUsd | currency:'USD':'symbol':'1.2-2' }}
               </strong>
             </div>
@@ -316,57 +324,46 @@
         </div>
       </div>
 
-      <!-- Tabla de Vista Previa (7 Columnas Requeridas, sin RFC) -->
+      <!-- Tabla de Vista Previa -->
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr class="bg-slate-100 border-b-2 border-slate-300 text-slate-700 text-xs uppercase tracking-wider">
-              <th class="py-3.5 px-4 font-bold text-center">1. N° Proveedor (Clave)</th>
-              <th class="py-3.5 px-4 font-bold">2. Nombre del Proveedor</th>
-              <th class="py-3.5 px-4 font-bold">3. Folio Contrarrecibo</th>
-              <th class="py-3.5 px-4 font-bold">4. Factura (Serie/Folio)</th>
-              <th class="py-3.5 px-4 font-bold text-center">5. Fecha Programada de Pago</th>
-              <th class="py-3.5 px-4 font-bold text-right">6. Monto / Total</th>
-              <th class="py-3.5 px-4 font-bold text-center">7. Moneda</th>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-[11px] font-semibold uppercase tracking-wider">
+              <th class="py-3 px-4 text-center">1. N° Prov</th>
+              <th class="py-3 px-4">2. Proveedor</th>
+              <th class="py-3 px-4">3. Folio Contrarrecibo</th>
+              <th class="py-3 px-4">4. Factura</th>
+              <th class="py-3 px-4 text-center">5. Fecha Programada</th>
+              <th class="py-3 px-4 text-right">6. Monto / Total</th>
+              <th class="py-3 px-4 text-center">7. Moneda</th>
             </tr>
           </thead>
 
           <tbody>
             @for (fila of filasVistaPrevia; track fila.factura.uuid || fila.folioFactura) {
               <tr
-                class="transition-colors"
-                [ngClass]="[
-                  fila.indiceGrupo % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-indigo-50/45 hover:bg-indigo-50/80',
-                  fila.esInicioGrupo ? 'border-t-2 border-indigo-200' : 'border-t border-slate-100',
-                  fila.indiceGrupo % 2 === 0 ? 'border-l-4 border-l-blue-600' : 'border-l-4 border-l-indigo-600'
-                ]">
+                class="transition-colors border-t border-slate-100 hover:bg-slate-50/70"
+                [ngClass]="fila.esInicioGrupo ? 'border-t-slate-200' : ''">
                 <!-- 1. N° Proveedor (Clave) -->
-                <td class="py-3.5 px-4 text-center font-mono font-bold text-slate-800">
+                <td class="py-3 px-4 text-center font-mono font-medium text-slate-700">
                   #{{ fila.claveProveedor }}
                 </td>
 
                 <!-- 2. Nombre del Proveedor -->
-                <td class="py-3.5 px-4 font-semibold text-slate-900">
+                <td class="py-3 px-4 font-medium text-slate-900">
                   {{ fila.razonSocial }}
                 </td>
 
                 <!-- 3. Folio Contrarrecibo -->
-                <td class="py-3.5 px-4 font-mono">
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
-                      [ngClass]="
-                        fila.indiceGrupo % 2 === 0
-                          ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                          : 'bg-indigo-100 text-indigo-900 border border-indigo-300'
-                      ">
+                <td class="py-3 px-4 font-mono">
+                  <div class="flex items-center gap-1.5">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
                       #{{ fila.folioContrarrecibo }}
                     </span>
 
                     @if (fila.tamanoGrupo > 1 && fila.esInicioGrupo) {
                       <span
-                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"
-                        title="Este contrarrecibo agrupa {{ fila.tamanoGrupo }} facturas">
+                        class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
                         {{ fila.tamanoGrupo }} facturas
                       </span>
                     }
@@ -374,35 +371,35 @@
                 </td>
 
                 <!-- 4. Factura (Serie/Folio) -->
-                <td class="py-3.5 px-4 font-mono font-bold">
+                <td class="py-3 px-4 font-mono font-medium">
                   <a
                     [routerLink]="['/pagos-programados', fila.factura.uuid]"
                     [queryParams]="{ origen: 'reportes' }"
                     [state]="{ origen: 'reportes' }"
-                    class="text-blue-600 hover:text-blue-800 hover:underline"
-                    title="Abrir detalle de la factura para editar estado o contrarrecibo">
+                    class="text-slate-900 hover:text-blue-600 hover:underline"
+                    title="Ver detalle de factura">
                     {{ fila.folioFactura }}
                   </a>
                 </td>
 
                 <!-- 5. Fecha Programada de Pago -->
-                <td class="py-3.5 px-4 text-center font-mono text-slate-800 whitespace-nowrap">
+                <td class="py-3 px-4 text-center font-mono text-slate-700 whitespace-nowrap">
                   {{ formatearFechaLatam(fila.fechaProgramada) }}
                 </td>
 
                 <!-- 6. Monto / Total -->
-                <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
+                <td class="py-3 px-4 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
                   {{ fila.montoTotal | currency:fila.monedaCodigo:'symbol':'1.2-2' }}
                 </td>
 
-                <!-- 7. Moneda (Pesos / Dólares) -->
-                <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                <!-- 7. Moneda -->
+                <td class="py-3 px-4 text-center whitespace-nowrap">
                   <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
+                    class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border"
                     [ngClass]="
                       fila.monedaCodigo === 'USD'
-                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-slate-50 text-slate-700 border-slate-200'
                     ">
                     {{ fila.monedaEtiqueta }}
                   </span>
@@ -411,18 +408,18 @@
             } @empty {
               <tr>
                 <td colspan="7" class="py-12 px-6 text-center text-slate-500">
-                  <div class="max-w-md mx-auto space-y-3">
-                    <p class="font-semibold text-slate-700">
+                  <div class="max-w-md mx-auto space-y-2">
+                    <p class="font-medium text-slate-700">
                       No se encontraron facturas con Folio de Contrarrecibo para los filtros seleccionados.
                     </p>
-                    <p class="text-xs text-slate-500">
-                      Puedes asignar un Folio de Contrarrecibo desde el detalle de cualquier factura en Pagos Programados, o cambiar el filtro superior para ver todas las facturas.
+                    <p class="text-xs text-slate-400">
+                      Asigna un Folio de Contrarrecibo en Pagos Programados o cambia el filtro para ver todas.
                     </p>
                     @if (filtroContrarrecibo === 'CON_CONTRARRECIBO' && todasLasFacturas.length > 0) {
                       <button
                         type="button"
                         (click)="filtroContrarrecibo = 'TODAS'; aplicarFiltros()"
-                        class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition cursor-pointer">
+                        class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition cursor-pointer">
                         Mostrar todas las facturas ({{ todasLasFacturas.length }})
                       </button>
                     }
@@ -434,27 +431,27 @@
 
           @if (filasVistaPrevia.length > 0) {
             <tfoot>
-              <tr class="bg-slate-100 border-t-2 border-slate-800 font-bold text-slate-900">
-                <td colspan="5" class="py-3.5 px-4 text-right uppercase text-xs tracking-wider">
-                  Total en Vista Previa ({{ filasVistaPrevia.length }} facturas en {{ totalGruposContrarrecibo }} contrarrecibos):
+              <tr class="bg-slate-50 border-t border-slate-300 font-semibold text-slate-900">
+                <td colspan="5" class="py-3 px-4 text-right uppercase text-xs tracking-wider text-slate-600">
+                  Total en Vista Previa ({{ filasVistaPrevia.length }} facturas):
                 </td>
-                <td class="py-3.5 px-4 text-right font-mono text-base text-blue-900 bg-blue-50">
+                <td class="py-3 px-4 text-right font-mono text-sm text-slate-900">
                   {{ totalMontoMxn | currency:'MXN':'symbol':'1.2-2' }}
                 </td>
-                <td class="py-3.5 px-4 text-center text-xs text-slate-700">
-                  Pesos (MXN)
+                <td class="py-3 px-4 text-center text-xs text-slate-600">
+                  MXN
                 </td>
               </tr>
               @if (totalMontoUsd > 0) {
-                <tr class="bg-slate-100 border-t border-slate-300 font-bold text-slate-900">
-                  <td colspan="5" class="py-3 px-4 text-right uppercase text-xs tracking-wider">
-                    Total en Dólares (USD):
+                <tr class="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900">
+                  <td colspan="5" class="py-2.5 px-4 text-right uppercase text-xs tracking-wider text-slate-600">
+                    Total USD:
                   </td>
-                  <td class="py-3 px-4 text-right font-mono text-base text-amber-900 bg-amber-50">
+                  <td class="py-2.5 px-4 text-right font-mono text-sm text-slate-900">
                     {{ totalMontoUsd | currency:'USD':'symbol':'1.2-2' }}
                   </td>
-                  <td class="py-3 px-4 text-center text-xs text-slate-700">
-                    Dólares (USD)
+                  <td class="py-2.5 px-4 text-center text-xs text-slate-600">
+                    USD
                   </td>
                 </tr>
               }

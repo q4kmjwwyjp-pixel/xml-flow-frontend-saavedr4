@@ -1,77 +1,116 @@
-<div class="min-h-screen bg-slate-50 flex items-center justify-center p-4 page-transition-enter">
-  <div class="w-full max-w-md bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-100">
+<div class="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 page-transition-enter">
+  <div class="w-full max-w-md bg-white p-7 sm:p-8 rounded-2xl shadow-xs border border-slate-200/80">
 
-    <!-- Botón de regreso integrado en el encabezado de la tarjeta (sin flotar con position: fixed) -->
-    <div class="mb-4 -mt-2">
+    <!-- Navegación superior -->
+    <div class="mb-5 flex items-center justify-between">
       <button
         type="button"
         title="Regresar al Dashboard"
         (click)="regresar()"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 rounded-lg transition cursor-pointer">
+        class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
         </svg>
         Regresar al Dashboard
       </button>
+
+      <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
+        CFDI 4.0
+      </span>
     </div>
 
-    <!-- Logo idéntico al de Login -->
-    <div class="flex justify-center mb-2 -mt-2">
-      <app-logo-xml-flow></app-logo-xml-flow>
+    <!-- Logo y Título -->
+    <div class="text-center mb-6">
+      <div class="flex justify-center mb-3">
+        <app-logo-xml-flow></app-logo-xml-flow>
+      </div>
+      <h1 class="text-xl font-bold text-slate-900 tracking-tight">
+        Cargar Factura XML
+      </h1>
+      <p class="text-xs text-slate-500 mt-1">
+        Sube el archivo XML para validación fiscal y programación
+      </p>
     </div>
-
-    <h1 class="text-3xl font-bold text-center text-slate-900 mb-8">
-      Cargar Factura XML
-    </h1>
 
     <!-- Zona Drag and Drop -->
-    <div 
-      class="w-full border-2 border-dashed rounded-xl p-6 text-center transition-all duration-150 mb-6"
-      [ngClass]="estaArrastrando() ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'"
+    <div
+      class="w-full border border-dashed rounded-xl p-6 text-center transition-all duration-150 mb-5 cursor-pointer"
+      [ngClass]="estaArrastrando() ? 'border-slate-900 bg-slate-50' : 'border-slate-300 bg-slate-50/50 hover:border-slate-400 hover:bg-slate-50'"
       (dragover)="onDragOver($event)"
       (dragleave)="onDragLeave($event)"
       (drop)="onDrop($event)">
 
       @if (archivoSeleccionado()) {
-        <p class="text-sm font-semibold text-slate-800 break-all mb-1">
-          {{ archivoSeleccionado()?.name }}
-        </p>
-        <button type="button" class="text-xs text-red-500 font-medium hover:underline cursor-pointer" (click)="limpiarArchivo()">
-          Cambiar archivo
-        </button>
+        <div class="flex flex-col items-center">
+          <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 mb-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <p class="text-xs font-semibold text-slate-800 break-all mb-1 max-w-[280px]">
+            {{ archivoSeleccionado()?.name }}
+          </p>
+          <button
+            type="button"
+            class="text-xs text-rose-600 hover:text-rose-700 font-medium underline cursor-pointer"
+            (click)="limpiarArchivo(); $event.stopPropagation()">
+            Cambiar archivo
+          </button>
+        </div>
       } @else {
-        <p class="text-sm text-slate-500 mb-1">Arrastra tu archivo XML aquí o</p>
-        <label for="fileInput" class="text-sm font-semibold text-blue-600 hover:text-blue-700 cursor-pointer">
-          Explorar archivos
-        </label>
-        <input id="fileInput" type="file" accept=".xml, application/xml, text/xml" class="hidden" (change)="onFileSelected($event)" />
+        <div class="flex flex-col items-center">
+          <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 mb-2.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+          </div>
+          <p class="text-xs text-slate-600 mb-1">
+            Arrastra el archivo XML aquí o
+          </p>
+          <label for="fileInput" class="text-xs font-semibold text-slate-900 hover:underline cursor-pointer">
+            Seleccionar archivo
+          </label>
+          <input
+            id="fileInput"
+            type="file"
+            accept=".xml, application/xml, text/xml"
+            class="hidden"
+            (change)="onFileSelected($event)" />
+        </div>
       }
     </div>
 
     <!-- Alerta de Error -->
     @if (mensajeError()) {
-      <div role="alert" class="animate-alert-in p-3 mb-6 bg-red-50 text-red-700 text-xs rounded-lg text-center border border-red-200">
-        {{ mensajeError() }}
+      <div
+        role="alert"
+        class="animate-alert-in p-3 mb-5 bg-rose-50 border border-rose-200/80 text-rose-800 text-xs rounded-lg flex items-start gap-2">
+        <svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" stroke-width="2"/>
+          <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+        </svg>
+        <span class="leading-relaxed">{{ mensajeError() }}</span>
       </div>
     }
 
-    <!-- Botón de Envío estilo Login -->
-    <button 
-      type="button" 
+    <!-- Botón de Envío -->
+    <button
+      type="button"
       [disabled]="!archivoSeleccionado() || cargando()"
       (click)="enviarArchivo()"
-      class="w-full flex items-center justify-center gap-2.5 py-3.5 px-5 border border-transparent rounded-lg shadow-sm text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 cursor-pointer">
+      class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-45 disabled:cursor-not-allowed transition duration-150 cursor-pointer shadow-xs">
       @if (cargando()) {
         <span class="btn-inline-spinner" aria-hidden="true"></span>
-        <span>Validando comprobante XML...</span>
+        <span>Validando comprobante...</span>
       } @else {
-        <span>Enviar XML</span>
+        <span>Validar y Procesar XML</span>
       }
     </button>
 
-    <!-- Footer estilo Login -->
-    <div class="text-center text-sm text-slate-500 mt-7 pt-6 border-t -mb-2 border-slate-100">
-      VEXEL © 2026
+    <!-- Footer -->
+    <div class="text-center text-[11px] text-slate-400 mt-6 pt-4 border-t border-slate-100">
+      VEXEL &bull; CFDI 4.0
     </div>
 
   </div>

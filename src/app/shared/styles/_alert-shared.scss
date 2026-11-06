@@ -1,6 +1,4 @@
-// Estilos compartidos entre Alerta de rechazo (Interfaz 3) y
-// Alerta de validación exitosa (Interfaz 4). Se importa con @use desde
-// cada componente para no duplicar reglas.
+// Estilos compartidos entre Alerta de rechazo y Alerta de éxito - Minimalist Enterprise Style
 @use 'variables' as v;
 
 .alert-page {
@@ -8,24 +6,19 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 3rem 1.5rem;
-  font-family: v.$xf-font;
-
-  &--success {
-    background: linear-gradient(160deg, #f0fdf4 0%, v.$xf-green-100 100%);
-  }
-  &--error {
-    background: linear-gradient(160deg, #fef2f2 0%, v.$xf-red-100 100%);
-  }
+  padding: 2.5rem 1rem;
+  background-color: #f8fafc;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .alert-card {
   width: 100%;
-  max-width: 560px;
-  background: #fff;
-  border-radius: v.$xf-radius;
-  box-shadow: v.$xf-shadow;
-  padding: 2rem 2.25rem 2.25rem;
+  max-width: 540px;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  padding: 1.75rem 2rem 2rem;
 
   &__header {
     display: flex;
@@ -35,92 +28,101 @@
   }
 
   &__badge {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    padding: 0.3rem 0.65rem;
+    padding: 0.25rem 0.6rem;
     border-radius: 999px;
+    border: 1px solid transparent;
 
     &--success {
-      background: v.$xf-green-100;
-      color: v.$xf-green-600;
+      background: #f0fdf4;
+      color: #15803d;
+      border-color: #bbf7d0;
     }
     &--error {
-      background: v.$xf-red-100;
-      color: v.$xf-red-600;
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
     }
   }
 
   &__icon {
-    width: 56px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
-    font-weight: 700;
-    margin: 0 auto 1rem;
+    margin: 0 auto 0.85rem;
 
     &--success {
-      background: v.$xf-green-100;
-      color: v.$xf-green-600;
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
     }
     &--error {
-      background: v.$xf-red-100;
-      color: v.$xf-red-600;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
     }
   }
 
   &__title {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    color: v.$xf-navy-900;
+    color: #0f172a;
     text-align: center;
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.01em;
   }
+
   &__subtitle {
-    font-size: 0.88rem;
-    color: v.$xf-gray-500;
+    font-size: 0.82rem;
+    color: #64748b;
     text-align: center;
-    margin: 0 0 1.5rem;
+    margin: 0 0 1.25rem;
   }
 
   &__summary {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.85rem 1.25rem;
-    background: v.$xf-gray-50;
-    border-radius: 12px;
-    padding: 1rem 1.15rem;
-    margin-bottom: 1.5rem;
+    gap: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.25rem;
 
     div {
       display: flex;
       flex-direction: column;
-      gap: 0.15rem;
+      gap: 0.1rem;
     }
     span {
-      font-size: 0.72rem;
-      color: v.$xf-gray-500;
+      font-size: 0.68rem;
+      color: #64748b;
       text-transform: uppercase;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
+      font-weight: 600;
     }
     strong {
-      font-size: 0.9rem;
-      color: v.$xf-navy-900;
+      font-size: 0.84rem;
+      color: #0f172a;
     }
   }
 
   &__errores {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 
     h2 {
-      font-size: 0.95rem;
+      font-size: 0.82rem;
       font-weight: 700;
-      color: v.$xf-navy-900;
-      margin: 0 0 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #475569;
+      margin: 0 0 0.6rem;
     }
 
     ul {
@@ -129,79 +131,83 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.5rem;
     }
 
     li {
-      border: 1px solid v.$xf-red-100;
-      background: #fffbfb;
-      border-radius: 10px;
-      padding: 0.75rem 0.9rem;
+      border: 1px solid #fecdd3;
+      background: #fff1f2;
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
     }
 
     &-campo {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      color: v.$xf-red-600;
+      color: #9f1239;
     }
     p {
-      font-size: 0.83rem;
-      color: v.$xf-navy-800;
-      margin: 0.25rem 0 0.4rem;
+      font-size: 0.8rem;
+      color: #881337;
+      margin: 0.2rem 0 0.3rem;
       line-height: 1.4;
     }
 
     &-valores {
       display: flex;
-      gap: 1rem;
-      font-size: 0.75rem;
-      color: v.$xf-gray-500;
+      gap: 0.85rem;
+      font-size: 0.72rem;
+      color: #64748b;
 
       strong {
-        color: v.$xf-navy-900;
+        color: #0f172a;
       }
     }
   }
 
   &__empty {
     text-align: center;
-    font-size: 0.85rem;
-    color: v.$xf-gray-500;
-    background: v.$xf-gray-50;
-    border-radius: 10px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem;
+    margin-bottom: 1.25rem;
   }
 
   &__actions {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
 
   &__btn {
     flex: 1;
-    border-radius: 10px;
-    padding: 0.75rem;
-    font-size: 0.88rem;
+    border-radius: 8px;
+    padding: 0.65rem;
+    font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
-    border: none;
-    transition: opacity 0.15s ease, background 0.15s ease;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    text-align: center;
 
     &--primary {
-      background: v.$xf-blue-600;
-      color: #fff;
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
     }
     &--primary:hover {
-      background: v.$xf-navy-800;
+      background: #1e293b;
     }
     &--ghost {
-      background: v.$xf-gray-50;
-      color: v.$xf-navy-800;
-      border: 1.5px solid v.$xf-gray-200;
+      background: #ffffff;
+      color: #334155;
+      border-color: #cbd5e1;
     }
     &--ghost:hover {
-      background: v.$xf-gray-200;
+      background: #f8fafc;
+      color: #0f172a;
     }
   }
 }
