@@ -44,7 +44,6 @@
           type="text"
           formControlName="usuario"
           (input)="limpiarErrorAlEscribir()"
-          placeholder="daniela o admin"
           autocomplete="username"
           autocorrect="off"
           autocapitalize="off"
@@ -68,7 +67,6 @@
             [type]="mostrarPassword() ? 'text' : 'password'"
             formControlName="password"
             (input)="limpiarErrorAlEscribir()"
-            placeholder="••••••••"
             autocomplete="current-password"
             enterkeyhint="done"
             required

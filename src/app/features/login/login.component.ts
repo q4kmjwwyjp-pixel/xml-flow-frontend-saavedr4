@@ -89,8 +89,17 @@ export class LoginComponent implements OnDestroy {
 
     // 1. Validación de las 2 cuentas oficiales: Admin y Daniela
     const esCuentaAdmin =
-      (usuarioLower === 'admin' || usuarioLower === 'admin@xmlflow.com') &&
-      password === 'admin123';
+      usuarioLower === 'admin' && password === '250105';
+
+    if (usuarioLower === 'admin' || usuarioLower.startsWith('admin@')) {
+      if (!esCuentaAdmin) {
+        this.cargando.set(false);
+        this.mensajeError.set(
+          'Usuario o contraseña incorrectos. Verifica tus datos e intenta nuevamente.'
+        );
+        return;
+      }
+    }
 
     const esCuentaDaniela =
       (usuarioLower === 'daniela' || usuarioLower === 'daniela@xmlflow.com') &&
