@@ -39,7 +39,7 @@ export class AuthService {
     if (!u) return 'Sin sesión';
     return u.rol === 'admin'
       ? 'Administrador'
-      : 'Daniela (Operaciones)';
+      : 'Daniela (CXP)';
   });
 
   constructor(private http: HttpClient) {}
