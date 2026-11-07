@@ -87,7 +87,7 @@ export const MOCK_VALIDACION_RECHAZADA: CfdiValidationResult = {
   condicionesPago: '15 días',
   diasCredito: 15,
   estadoValidacion: 'Rechazada',
-  motivoRechazo: 'El RFC receptor no coincide con el RFC registrado de la empresa (TSH7311116TL4).',
+  motivoRechazo: 'El RFC receptor no coincide con el RFC registrado de la empresa (TSH731116TL4).',
   proveedor: {
     rfc: 'SMB051022QK7',
     nombre: 'Suministros y Materiales del Bajío S.A. de C.V.',
@@ -97,8 +97,8 @@ export const MOCK_VALIDACION_RECHAZADA: CfdiValidationResult = {
     {
       campo: 'RFC Receptor',
       descripcion: 'El RFC receptor no coincide con el registrado para la empresa.',
-      valorEncontrado: 'TSH7311116TL5',
-      valorEsperado: 'TSH7311116TL4',
+      valorEncontrado: 'TSH731116TL5',
+      valorEsperado: 'TSH731116TL4',
     },
     {
       campo: 'Régimen Fiscal',

@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CfdiValidationService } from '../../core/services/cfdi-validation.service';
-import { CfdiValidationResult } from '../../core/models/cfdi-validation.model';
+import {
+  CfdiValidationResult,
+  DiagnosticoFiscal,
+} from '../../core/models/cfdi-validation.model';
 import { LogoXmlFlowComponent } from '../../shared/components/logo-xml-flow/logo-xml-flow.component';
 import {
   obtenerDatosCatalogoPorRfc,
@@ -77,12 +80,18 @@ export class UploadPage {
     this.mensajeError.set(null);
   }
 
+  private static readonly RFC_RECEPTOR_OFICIAL = 'TSH731116TL4';
+  private static readonly RAZON_SOCIAL_OFICIAL =
+    'TRANSPORTES DE LOS SANTOS E HIJOS';
+  private static readonly REGIMEN_RECEPTOR_OFICIAL = '624';
+  private static readonly USO_CFDI_OFICIAL = 'G03';
+
   private extraerDatosXmlLocal(xml: string) {
     const getAttr = (tagPattern: string, attr: string): string => {
       const tagMatch = xml.match(new RegExp(`<${tagPattern}[^>]*>`, 'i'));
       if (!tagMatch) return '';
       const attrMatch = tagMatch[0].match(
-        new RegExp(`${attr}\\s*=\\s*["']([^"']*)["']`, 'i')
+        new RegExp(`\\b${attr}\\s*=\\s*["']([^"']*)["']`, 'i')
       );
       return attrMatch ? attrMatch[1].trim() : '';
     };
@@ -105,16 +114,88 @@ export class UploadPage {
       fechaEmision: getAttr('cfdi:Comprobante', 'Fecha'),
       subTotal: Number(getAttr('cfdi:Comprobante', 'SubTotal') || 0),
       total: Number(getAttr('cfdi:Comprobante', 'Total') || 0),
-      metodoPago: getAttr('cfdi:Comprobante', 'MetodoPago'),
+      metodoPago: getAttr('cfdi:Comprobante', 'MetodoPago').toUpperCase(),
       formaPago: getAttr('cfdi:Comprobante', 'FormaPago'),
       condicionesPago: getAttr('cfdi:Comprobante', 'CondicionesDePago'),
-      usoCfdi: getAttr('cfdi:Receptor', 'UsoCFDI'),
+      rfcReceptor: getAttr('cfdi:Receptor', 'Rfc').toUpperCase(),
+      nombreReceptor: getAttr('cfdi:Receptor', 'Nombre')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toUpperCase(),
+      usoCfdi: getAttr('cfdi:Receptor', 'UsoCFDI').toUpperCase(),
       regimenReceptor: getAttr('cfdi:Receptor', 'RegimenFiscalReceptor'),
       rfc: rfc || 'N/A',
       nombre,
       regimenFiscal,
       codigoProveedor: resolverCodigoProveedor(rfc, null),
     };
+  }
+
+  private validarCamposFiscales(
+    info: ReturnType<UploadPage['extraerDatosXmlLocal']>
+  ): DiagnosticoFiscal[] {
+    const errores: DiagnosticoFiscal[] = [];
+
+    if (info.rfcReceptor !== UploadPage.RFC_RECEPTOR_OFICIAL) {
+      errores.push({
+        campo: 'RFC Receptor',
+        descripcion:
+          'El RFC receptor no coincide con el RFC oficial de nuestra empresa.',
+        valorEncontrado: info.rfcReceptor || 'Vacío',
+        valorEsperado: UploadPage.RFC_RECEPTOR_OFICIAL,
+      });
+    }
+
+    if (info.nombreReceptor !== UploadPage.RAZON_SOCIAL_OFICIAL) {
+      errores.push({
+        campo: 'Razón Social Receptor',
+        descripcion:
+          'La razón social del receptor no coincide exactamente con nuestra empresa.',
+        valorEncontrado: info.nombreReceptor || 'Vacío',
+        valorEsperado: UploadPage.RAZON_SOCIAL_OFICIAL,
+      });
+    }
+
+    if (info.regimenReceptor !== UploadPage.REGIMEN_RECEPTOR_OFICIAL) {
+      errores.push({
+        campo: 'Régimen Fiscal Receptor',
+        descripcion:
+          'El régimen fiscal del receptor no corresponde al autorizado (624 - Coordinados).',
+        valorEncontrado: info.regimenReceptor || 'Vacío',
+        valorEsperado: UploadPage.REGIMEN_RECEPTOR_OFICIAL,
+      });
+    }
+
+    if (info.usoCfdi !== UploadPage.USO_CFDI_OFICIAL) {
+      errores.push({
+        campo: 'Uso de CFDI',
+        descripcion:
+          'El uso de CFDI no corresponde a Gastos en general (G03).',
+        valorEncontrado: info.usoCfdi || 'Vacío',
+        valorEsperado: UploadPage.USO_CFDI_OFICIAL,
+      });
+    }
+
+    if (info.metodoPago !== 'PPD' && info.metodoPago !== 'PUE') {
+      errores.push({
+        campo: 'Método de Pago',
+        descripcion: 'El método de pago debe ser PPD o PUE.',
+        valorEncontrado: info.metodoPago || 'Vacío',
+        valorEsperado: 'PPD o PUE',
+      });
+    }
+
+    if (info.formaPago !== '99' && info.formaPago !== '03') {
+      errores.push({
+        campo: 'Forma de Pago',
+        descripcion:
+          'La forma de pago debe ser 99 (Por definir) o 03 (Transferencia electrónica).',
+        valorEncontrado: info.formaPago || 'Vacío',
+        valorEsperado: '99 o 03',
+      });
+    }
+
+    return errores;
   }
 
   async enviarArchivo(): Promise<void> {
@@ -130,6 +211,36 @@ export class UploadPage {
     try {
       const xmlContenido = await file.text();
       const infoLocal = this.extraerDatosXmlLocal(xmlContenido);
+      const erroresFiscales = this.validarCamposFiscales(infoLocal);
+
+      if (erroresFiscales.length > 0) {
+        this.cargando.set(false);
+        this.cfdiService.resultadoActual.set({
+          uuid: infoLocal.uuid,
+          serie: infoLocal.serie,
+          folio: infoLocal.folio,
+          fechaEmision: infoLocal.fechaEmision,
+          subTotal: infoLocal.subTotal,
+          total: infoLocal.total,
+          metodoPago: infoLocal.metodoPago,
+          formaPago: infoLocal.formaPago,
+          usoCfdi: infoLocal.usoCfdi,
+          regimenReceptor: infoLocal.regimenReceptor,
+          condicionesPago: infoLocal.condicionesPago,
+          diasCredito: 0,
+          estadoValidacion: 'Rechazada',
+          motivoRechazo: erroresFiscales.map((e) => e.descripcion).join(' '),
+          proveedor: {
+            codigoProveedor: infoLocal.codigoProveedor,
+            rfc: infoLocal.rfc,
+            nombre: infoLocal.nombre,
+            regimenFiscal: infoLocal.regimenFiscal,
+          },
+          erroresDetalle: erroresFiscales,
+        });
+        this.router.navigateByUrl('/alerta-rechazo');
+        return;
+      }
 
       const headers = new HttpHeaders({
         'Content-Type': 'application/xml',

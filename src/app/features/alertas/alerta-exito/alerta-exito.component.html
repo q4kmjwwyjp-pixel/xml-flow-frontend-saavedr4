@@ -36,7 +36,7 @@
             Revisa el nodo CondicionesDePago o registra los días en la columna Cond. Pag./Prov.
           </p>
         </div>
-      } @else if (diasEnXml() === null && diasEnListaProveedores() !== null) {
+      } @else if (diasEnXml() === null && diasEnListaProveedores() !== null && diasFijosProveedor() > 0) {
         <div class="p-3 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-xs leading-relaxed">
           <div class="font-bold text-slate-900 mb-0.5 flex items-center gap-1.5">
             <svg class="w-4 h-4 shrink-0 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
