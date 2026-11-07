@@ -61,9 +61,9 @@ export class DetalleFactura implements OnInit {
 
   textoBotonRegresar = computed(() => {
     const origen = this.origenNavegacion();
-    if (origen === 'reportes') return '← Regresar a Generador de Reportes';
-    if (origen === 'dashboard') return '← Regresar al Dashboard';
-    return '← Volver a Pagos Programados';
+    if (origen === 'reportes') return 'Regresar a Generador de Reportes';
+    if (origen === 'dashboard') return 'Regresar al Dashboard';
+    return 'Volver a Pagos Programados';
   });
 
   /** Facturas adicionales que comparten el mismo Folio de Contrarrecibo */

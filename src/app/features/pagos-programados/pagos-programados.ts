@@ -32,8 +32,8 @@ export class PagosProgramados implements OnInit {
 
   textoBotonRegresar = computed(() =>
     this.origenNavegacion() === 'reportes'
-      ? '← Regresar a Generador de Reportes'
-      : '← Regresar al Dashboard'
+      ? 'Regresar a Generador de Reportes'
+      : 'Regresar al Dashboard'
   );
 
   todasLasFacturas: any[] = [];
