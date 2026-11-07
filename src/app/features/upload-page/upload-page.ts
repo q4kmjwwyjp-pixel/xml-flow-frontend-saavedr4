@@ -83,6 +83,7 @@ export class UploadPage {
   private static readonly RFC_RECEPTOR_OFICIAL = 'TSH731116TL4';
   private static readonly RAZON_SOCIAL_OFICIAL =
     'TRANSPORTES DE LOS SANTOS E HIJOS';
+  private static readonly DOMICILIO_RECEPTOR_OFICIAL = '34229';
   private static readonly REGIMEN_RECEPTOR_OFICIAL = '624';
   private static readonly USO_CFDI_OFICIAL = 'G03';
 
@@ -122,6 +123,7 @@ export class UploadPage {
         .replace(/\s+/g, ' ')
         .trim()
         .toUpperCase(),
+      domicilioReceptor: getAttr('cfdi:Receptor', 'DomicilioFiscalReceptor'),
       usoCfdi: getAttr('cfdi:Receptor', 'UsoCFDI').toUpperCase(),
       regimenReceptor: getAttr('cfdi:Receptor', 'RegimenFiscalReceptor'),
       rfc: rfc || 'N/A',
@@ -153,6 +155,16 @@ export class UploadPage {
           'La razón social del receptor no coincide exactamente con nuestra empresa.',
         valorEncontrado: info.nombreReceptor || 'Vacío',
         valorEsperado: UploadPage.RAZON_SOCIAL_OFICIAL,
+      });
+    }
+
+    if (info.domicilioReceptor !== UploadPage.DOMICILIO_RECEPTOR_OFICIAL) {
+      errores.push({
+        campo: 'Domicilio Fiscal Receptor (CP)',
+        descripcion:
+          'El código postal del domicilio fiscal receptor no coincide con el oficial de nuestra empresa.',
+        valorEncontrado: info.domicilioReceptor || 'Vacío',
+        valorEsperado: UploadPage.DOMICILIO_RECEPTOR_OFICIAL,
       });
     }
 
