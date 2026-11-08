@@ -144,7 +144,6 @@ export class Proveedores implements OnInit {
   }
 
   confirmarEliminacion(prov: Proveedor): void {
-    if (!this.authService.esAdmin()) return;
     this.proveedorAEliminar.set(prov);
     this.mostrarModalEliminar.set(true);
   }
@@ -155,7 +154,6 @@ export class Proveedores implements OnInit {
   }
 
   ejecutarEliminacion(): void {
-    if (!this.authService.esAdmin()) return;
     const prov = this.proveedorAEliminar();
     if (!prov) return;
 
