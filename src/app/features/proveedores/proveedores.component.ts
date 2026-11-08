@@ -247,14 +247,14 @@ export class Proveedores implements OnInit {
       return;
     }
 
-    if (this.modoEdicion()) {
-      const diasCreditoNum =
-        this.proveedorForm.diasCredito !== null &&
-        this.proveedorForm.diasCredito !== undefined &&
-        !Number.isNaN(Number(this.proveedorForm.diasCredito))
-          ? Math.max(0, parseInt(String(this.proveedorForm.diasCredito), 10))
-          : 0;
+    const diasCreditoNum =
+      this.proveedorForm.diasCredito !== null &&
+      this.proveedorForm.diasCredito !== undefined &&
+      !Number.isNaN(Number(this.proveedorForm.diasCredito))
+        ? Math.max(0, parseInt(String(this.proveedorForm.diasCredito), 10))
+        : 0;
 
+    if (this.modoEdicion()) {
       this.proveedorService
         .actualizarProveedor(rfcLimpio, {
           codigoProveedor: codigoLimpio,
@@ -285,6 +285,7 @@ export class Proveedores implements OnInit {
           rfc: rfcLimpio,
           nombre: nombreLimpio,
           regimenFiscal: regimenLimpio,
+          diasCredito: diasCreditoNum,
         })
         .subscribe({
           next: () => {

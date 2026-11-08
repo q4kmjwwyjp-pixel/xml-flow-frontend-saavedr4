@@ -306,6 +306,7 @@ export class ProveedorService {
     rfc: string;
     nombre: string;
     regimenFiscal: string;
+    diasCredito?: number | null;
   }): Observable<Proveedor> {
     const conflicto = this.validarDuplicados(nuevoProveedor, false);
     if (conflicto) {
@@ -318,11 +319,19 @@ export class ProveedorService {
       .replace(/^#+/, '')
       .trim();
     const codigo = codigoLimpio || 'S/N';
+    const diasCredito =
+      nuevoProveedor.diasCredito !== undefined &&
+      nuevoProveedor.diasCredito !== null &&
+      !Number.isNaN(Number(nuevoProveedor.diasCredito))
+        ? Number(nuevoProveedor.diasCredito)
+        : null;
+
     const payload = {
       ...nuevoProveedor,
       rfc: rfcUpper,
       nombre: nuevoProveedor.nombre.trim().replace(/\s+/g, ' '),
       codigoProveedor: codigo !== 'S/N' ? codigo : undefined,
+      diasCredito,
     };
 
     this.desmarcarEliminadoLocal(rfcUpper);
@@ -333,6 +342,7 @@ export class ProveedorService {
         nuevoProveedor.regimenFiscal.trim() ||
         (rfcUpper.length === 12 ? '601' : '612'),
       codigoProveedor: codigo,
+      diasCredito,
     });
 
     return this.http.post<Proveedor>(this.apiUrl, payload).pipe(
