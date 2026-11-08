@@ -42,6 +42,7 @@ export class Proveedores implements OnInit {
     rfc: '',
     nombre: '',
     regimenFiscal: '',
+    diasCredito: null as number | null,
   };
 
   filtroBusqueda = signal<string>('');
@@ -102,6 +103,7 @@ export class Proveedores implements OnInit {
       rfc: '',
       nombre: '',
       regimenFiscal: '',
+      diasCredito: null,
     };
     this.mostrarModal.set(true);
   }
@@ -121,6 +123,10 @@ export class Proveedores implements OnInit {
       rfc: prov.rfc,
       nombre: prov.nombre,
       regimenFiscal: claveNormalizada,
+      diasCredito:
+        prov.diasCredito !== undefined && prov.diasCredito !== null
+          ? Number(prov.diasCredito)
+          : 0,
     };
     this.mostrarModal.set(true);
   }
@@ -133,6 +139,7 @@ export class Proveedores implements OnInit {
       rfc: '',
       nombre: '',
       regimenFiscal: '',
+      diasCredito: null,
     };
   }
 
@@ -241,11 +248,19 @@ export class Proveedores implements OnInit {
     }
 
     if (this.modoEdicion()) {
+      const diasCreditoNum =
+        this.proveedorForm.diasCredito !== null &&
+        this.proveedorForm.diasCredito !== undefined &&
+        !Number.isNaN(Number(this.proveedorForm.diasCredito))
+          ? Math.max(0, parseInt(String(this.proveedorForm.diasCredito), 10))
+          : 0;
+
       this.proveedorService
         .actualizarProveedor(rfcLimpio, {
           codigoProveedor: codigoLimpio,
           nombre: nombreLimpio,
           regimenFiscal: regimenLimpio,
+          diasCredito: diasCreditoNum,
         })
         .subscribe({
           next: () => {

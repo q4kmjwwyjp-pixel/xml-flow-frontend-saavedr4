@@ -236,6 +236,10 @@ export class ProveedorService {
           rfcKey,
           ov.codigoProveedor || previo?.codigoProveedor
         ),
+        diasCredito:
+          ov.diasCredito !== undefined
+            ? ov.diasCredito
+            : previo?.diasCredito ?? null,
       });
     }
 
@@ -350,6 +354,7 @@ export class ProveedorService {
       codigoProveedor?: string;
       nombre?: string;
       regimenFiscal?: string;
+      diasCredito?: number | null;
     }
   ): Observable<Proveedor> {
     const rfcUpper = rfc.trim().toUpperCase();
@@ -374,6 +379,13 @@ export class ProveedorService {
           .trim() ||
         existente?.codigoProveedor ||
         'S/N',
+      diasCredito:
+        datosActualizados.diasCredito !== undefined
+          ? datosActualizados.diasCredito !== null &&
+            !Number.isNaN(Number(datosActualizados.diasCredito))
+            ? Number(datosActualizados.diasCredito)
+            : null
+          : existente?.diasCredito ?? null,
     };
 
     const conflicto = this.validarDuplicados(
@@ -401,6 +413,7 @@ export class ProveedorService {
           actualizadoLocal.codigoProveedor !== 'S/N'
             ? actualizadoLocal.codigoProveedor
             : undefined,
+        diasCredito: actualizadoLocal.diasCredito,
       })
       .pipe(
         tap(() => this.obtenerProveedores().subscribe()),
