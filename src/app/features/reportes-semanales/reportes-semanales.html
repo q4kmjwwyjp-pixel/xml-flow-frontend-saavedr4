@@ -170,20 +170,6 @@
         </select>
       </div>
 
-      <!-- Condición / Método SAT -->
-      <div class="field-group">
-        <label for="filtroCondicion">Método de Pago SAT</label>
-        <select
-          id="filtroCondicion"
-          [(ngModel)]="filtroCondicion"
-          (change)="aplicarFiltros()"
-          class="form-input">
-          <option value="TODAS">Todas (PPD y PUE)</option>
-          <option value="PPD">PPD - Parcialidades o Diferido</option>
-          <option value="PUE">PUE - Una sola exhibición</option>
-        </select>
-      </div>
-
       <!-- Moneda -->
       <div class="field-group">
         <label for="filtroMoneda">Moneda</label>

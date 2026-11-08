@@ -69,7 +69,6 @@ export class ReportesSemanales implements OnInit {
   fechaInicio: string = '';
   fechaFin: string = '';
   filtroEstado: string = 'TODOS';
-  filtroCondicion: string = 'TODAS';
   filtroMoneda: string = 'TODAS';
   filtroContrarrecibo: 'CON_CONTRARRECIBO' | 'TODAS' = 'CON_CONTRARRECIBO';
   ordenFolio: 'asc' | 'desc' = 'asc';
@@ -211,7 +210,6 @@ export class ReportesSemanales implements OnInit {
   limpiarFiltros(): void {
     this.criterioFecha = 'programacion';
     this.filtroEstado = 'TODOS';
-    this.filtroCondicion = 'TODAS';
     this.filtroMoneda = 'TODAS';
     this.filtroContrarrecibo = 'CON_CONTRARRECIBO';
     this.ordenFolio = 'asc';
@@ -307,15 +305,7 @@ export class ReportesSemanales implements OnInit {
         }
       }
 
-      // 4. Filtro por condición / método de pago
-      if (
-        this.filtroCondicion !== 'TODAS' &&
-        f.metodoPago !== this.filtroCondicion
-      ) {
-        return false;
-      }
-
-      // 5. Filtro por moneda (MXN / USD)
+      // 4. Filtro por moneda (MXN / USD)
       if (
         this.filtroMoneda !== 'TODAS' &&
         this.obtenerMonedaCodigo(f) !== this.filtroMoneda
